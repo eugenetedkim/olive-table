@@ -8,6 +8,28 @@ This repository contains a microservices architecture with:
 
 ---
 
+## Project Summary
+
+The Olive Table platform implements a microservices architecture to support KinMeal Social - a dietary-aware social gathering platform that helps users plan events while accounting for diverse dietary needs, preferences, and restrictions.
+
+### Key Features
+- User dietary profile management with restriction flexibility scales
+- Event planning and invitation system with RSVP tracking
+- Group dietary analysis and compatibility visualization
+- Recipe management with dietary filtering
+- Food and beverage discovery sharing
+- Content creator integration
+
+### Technology Stack
+- Microservices architecture for scalability
+- JWT-based authentication
+- MongoDB for data persistence
+- Node.js backend services
+- RESTful API design
+- Docker support for containerization
+
+---
+
 ## Architectural Overview
 
 ```mermaid
@@ -61,8 +83,21 @@ graph TD
 
 ### 1. Prerequisites
  - [Node.js](https://www.nodejs.org) (v18+ recommended)
+  - ```bash
+    node --version
+    # or
+    node -v
+    ```
  - [MongoDB](https://www.mongodb.com) (running locally or via Docker)
+  - ```bash
+    mongod --version
+    ```
  - [Docker](https://www.docker.com/) (optional, for containerized setup)
+  - ```bash
+    docker --version
+    # or
+    docker -v
+    ```
 
 ### 2. Clone and Configure
 ```bash
@@ -216,6 +251,34 @@ sequenceDiagram
     Invitation_Service-->>API_Gateway: Invitation Data
     API_Gateway-->>Client: 201 Created
 ```
+
+---
+
+## Development Roadmap
+
+For the MVP (Minimum Viable Product), we will focus on:
+
+1. **Core User Profile Management**
+   - Basic dietary profile creation (allergies, restrictions, preferences)
+   - Simple flexibility scale for each restriction
+   - Family/household member profiles
+
+2. **Essential Event Planning**
+   - Basic event creation with date, time, location
+   - Invitation system via email
+   - RSVP tracking with dietary information collection
+
+3. **Fundamental Dietary Analysis**
+   - Basic compatibility analysis for group meals
+   - Visual indicators for common restrictions
+   - Simple accommodation suggestions
+
+4. **Basic Recipe Management**
+   - Limited recipe database focused on common dietary needs
+   - Simple filtering by major restriction types
+   - Basic modification suggestions
+
+Future phases will implement the additional features outlined in the complete Software Requirements Specification.
 
 ---
 
