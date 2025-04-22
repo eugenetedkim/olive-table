@@ -127,6 +127,25 @@ services/
     │           └── Invitation.js
 ```
 
+---
+
+## Key Implementation Files
+
+| Service          | File                          | Key Functions/Middleware       |
+|------------------|-------------------------------|--------------------------------|
+| **API Gateway**  | `middleware/auth.js`          | `verifyToken()`                |
+|                  | `index.js`                    | Proxy configuration            |
+| **Identity**     | `authController.js`           | `register()`, `login()`        |
+| **Event**        | `eventController.js`          | `createEvent()`, `getEvents()` |
+| **Invitation**   | `invitationController.js`     | `createInvitation()`           |
+
+### Usage Examples:
+- **Authentication**: `verifyToken()` middleware checks JWT before routing to protected services
+- **Event Creation**: `createEvent()` handles validation and MongoDB persistence
+- **User Registration**: `register()` hashes passwords and generates JWTs
+
+--
+
 ## Prerequisites
 
 Before running the application, ensure you have the following installed:
