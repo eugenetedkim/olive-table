@@ -1,6 +1,24 @@
-# API Gateway & Event Service
+# Olive Table - API Gateway & Microservices
 
-This repository contains an API Gateway and Event Service. The API Gateway acts as a reverse proxy, routing requests to different services based on the request URL. It also handles authentication using JWT tokens for protected routes.
+This repository contains a microservices architecture with:
+- **API Gateway**: Reverse proxy with JWT authentication and path rewriting
+- **Identity Service**: User registration and authentication
+- **Event Service**: Event management (CRUD operations)
+- **Invitation Service**: Invitation and RSVP management
+
+## Architectural Overview
+
+```mermaid
+graph TD
+    A[Client] -->|HTTP Requests| B[API Gateway]
+    B -->|/api/auth/*| C[Identity Service]
+    B -->|/api/events → /events| D[Event Service]
+    B -->|/api/invitations → /api| E[Invitation Service]
+    
+    C --> F[(MongoDB Users)]
+    D --> G[(MongoDB Events)]
+    E --> H[(MongoDB Invitations)]
+```
 
 ## Prerequisites
 
