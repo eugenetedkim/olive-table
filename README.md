@@ -28,6 +28,60 @@ graph TD
     - JWT Authentication
     - Path Rewriting:
       - `/api/auth/*` → Identity Service
+      - `/api/events/*` → `/events/*` (Event Service)
+      - `/api/invitations/*` → `/api/*` (Invitation Service)
+2. **Identity Service** (`/services/identity-service`)
+  - Manages:
+    - User registration (`POST /api/auth/register`)
+    - User login (`POST /api/auth/login`)
+  - Key files:
+    - `authController.js` (register/login logic)
+    - `User.js` (Mongoose model)
+3. **Event Service** (`/services/event-service`)
+  - Handles:
+    - Event CRUD operations
+  - Key endpoints:
+    - `POST /events` (Create event)
+    - `GET /events/:id` (Get event)
+4. **Invitation Service** (`/services/invitation-service`)
+  - Manages:
+    - Invitations
+    - RSVPs
+  - Key files:
+    - `invitationController.js`
+    - `Invitation.js` (Mongoose model)
+
+---
+
+# Complete Request Flow Example
+
+**User Registration → Event Creation → Invitation Flow:**
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant API_Gateway
+    participant Identity_Service
+    participant Event_Service
+    participant Invitation_Service
+
+    Client->>API_Gateway: POST /api/auth/register
+    API_Gateway->>Identity_Service: /register
+    Identity_Service-->>API_Gateway: JWT Token
+    API_Gateway-->>Client: Token
+    
+    Client->>API_Gateway: POST /api/events (with JWT)
+    API_Gateway->>Event_Service: /events
+    Event_Service-->>API_Gateway: Event ID
+    API_Gateway-->>Client: 201 Created
+    
+    Client->>API_Gateway: POST /api/invitations (with JWT)
+    API_Gateway->>Invitation_Service: /api
+    Invitation_Service-->>API_Gateway: Invitation Data
+    API_Gateway-->>Client: 201 Created
+```
+
+---
 
 ## Prerequisites
 
