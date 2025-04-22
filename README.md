@@ -27,7 +27,7 @@ graph TD
   - Handles:
     - JWT Authentication
     - Path Rewriting:
-      - `/api/auth/*` -> Identity Service
+      - `/api/auth/*` → Identity Service
 
 ## Prerequisites
 
