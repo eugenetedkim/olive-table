@@ -83,21 +83,21 @@ graph TD
 
 ### 1. Prerequisites
  - [Node.js](https://www.nodejs.org) (v18+ recommended)
-  - ```bash
-    node --version
-    # or
-    node -v
-    ```
+```bash
+node --version
+# or
+node -v
+```
  - [MongoDB](https://www.mongodb.com) (running locally or via Docker)
-  - ```bash
-    mongod --version
-    ```
+```bash
+mongod --version
+```
  - [Docker](https://www.docker.com/) (optional, for containerized setup)
-  - ```bash
-    docker --version
-    # or
-    docker -v
-    ```
+```bash
+docker --version
+# or
+docker -v
+```
 
 ### 2. Clone and Configure
 ```bash
