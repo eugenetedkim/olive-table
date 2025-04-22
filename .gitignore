@@ -41,8 +41,8 @@
 
 # Environment files
 **/.env               # Ignores all .env files in any directory
-**./env.local         # Ignores local override environment files
-**./env.*.local       # Ignores environment files with patterns like .env.development.local
+**/.env.local         # Ignores local override environment files
+**/.env.*.local       # Ignores environment files with patterns like .env.development.local
 
 # Keep the example environment files in version control as templates
 # The exclamation mark negates the previous ignore pattern for .env files
