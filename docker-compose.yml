@@ -1,0 +1,80 @@
+# docker-compose.yml
+version: '3.8'
+
+services:
+  # API Gateway
+  api-gateway:
+    build: ./services/api-gateway
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./services/api-gateway/.env
+    depends_on:
+      - identity-service
+      - event-service
+      - invitation-service
+    networks:
+      - olive-network
+
+  # Identity Service
+  identity-service:
+    build: ./services/identity-service
+    ports:
+      - "3001:3001"
+    env_file:
+      - ./services/identity-service/.env
+    depends_on:
+      - mongo
+    networks:
+      - olive-network
+
+  # Event Service
+  event-service:
+    build: ./services/event-service
+    ports:
+      - "3002:3002"
+    env_file:
+      - ./services/event-service/.env
+    depends_on:
+      - mongo
+    networks:
+      - olive-network
+
+  # Invitation Service
+  invitation-service:
+    build: ./services/invitation-service
+    ports:
+      - "3003:3003"
+    env_file:
+      - ./services/invitation-service/.env
+    depends_on:
+      - mongo
+    networks:
+      - olive-network
+
+  # Frontend (commented out until we create it)
+  # frontend:
+  #   build: ./frontend
+  #   ports:
+  #     - "8080:80"
+  #   depends_on:
+  #     - api-gateway
+  #   networks:
+  #     - olive-network
+
+  # MongoDB
+  mongo:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - olive-network
+
+networks:
+  olive-network:
+    driver: bridge
+
+volumes:
+  mongodb_data:
