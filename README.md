@@ -20,6 +20,15 @@ graph TD
     E --> H[(MongoDB Invitations)]
 ```
 
+## Key Components
+
+1. **API Gateway** (`/services/api-gateway`)
+  - Entry point for all requests
+  - Handles:
+    - JWT Authentication
+    - Path Rewriting:
+      - `/api/auth/*` -> Identity Service
+
 ## Prerequisites
 
 Before running the application, ensure you have the following installed:
