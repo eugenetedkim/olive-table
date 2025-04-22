@@ -83,6 +83,50 @@ sequenceDiagram
 
 ---
 
+# Project Structure (Detailed)
+
+```
+services/
+├── api-gateway/
+│   ├── src/
+│   │   ├── middleware/
+│   │   │   └── auth.js       # JWT verification
+│   │   └── index.js          # Proxy configuration
+│
+├── identity-service/
+│   ├── src/
+│   │   ├── api/
+│   │   │   ├── controllers/
+│   │   │   │   └── authController.js
+│   │   │   └── routes/
+│   │   │       └── auth.js
+│   │   └── domain/
+│   │       └── models/
+│   │           └── User.js
+│
+├── event-service/
+│   ├── src/
+│   │   ├── api/
+│   │   │   ├── controllers/
+│   │   │   │   └── eventController.js
+│   │   │   └── routes/
+│   │   │       └── events.js
+│   │   └── domain/
+│   │       └── models/
+│   │           └── Event.js
+│
+└── invitation-service/
+    ├── src/
+    │   ├── api/
+    │   │   ├── controllers/
+    │   │   │   └── invitationController.js
+    │   │   └── routes/
+    │   │       └── invitations.js
+    │   └── domain/
+    │       └── models/
+    │           └── Invitation.js
+```
+
 ## Prerequisites
 
 Before running the application, ensure you have the following installed:
