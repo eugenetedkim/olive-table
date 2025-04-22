@@ -107,7 +107,7 @@ cd olive-table
 
 #### Create `.env` files in each service directory:
 ```bash
-# API Gateway (.env)
+# services/api-gateway/.env
 NODE_ENV=development
 PORT=3000
 IDENTITY_SERVICE=http://identity-service:3001
@@ -115,18 +115,18 @@ EVENT_SERVICE=http://event-service:3002
 INVITATION_SERVICE=http://invitation-service:3003
 JWT_SECRET=replace_this_with_a_long_random_string_you_generated
 
-# Identity Service (.env)
+# services/identity-service/.env
 NODE_ENV=development
 PORT=3001
 DB_CONNECTION=mongodb://mongo:27017/identity
 JWT_SECRET=same_as_jwt_secret_stored_in_api_gateway_.env
 
-# Event Service (.env) 
+# services/event-service/.env 
 NODE_ENV=development
 PORT=3002
 DB_CONNECTION=mongodb://mongo:27017/events
 
-# Invitation Service (.env)
+# services/invitation-service/.env
 NODE_ENV=development
 PORT=3003
 DB_CONNECTION=mongodb://mongo:27017/invitations
