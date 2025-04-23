@@ -285,20 +285,38 @@ sequenceDiagram
     participant Event_Service
     participant Invitation_Service
 
+    %% User Registration
     Client->>API_Gateway: POST /api/auth/register
     API_Gateway->>Identity_Service: /auth/register
-    Identity_Service-->>API_Gateway: JWT Token
-    API_Gateway-->>Client: Token
+    Identity_Service-->>API_Gateway: JWT Token & User ID
+    API_Gateway-->>Client: Token & User ID
     
+    %% User Login (separate operation, could be done later)
+    Client->>API_Gateway: POST /api/auth/login
+    API_Gateway->>Identity_Service: /auth/login
+    Identity_Service-->>API_Gateway: JWT Token & User ID
+    API_Gateway-->>Client: Token & User ID
+    
+    %% Event Creation (requires authentication)
     Client->>API_Gateway: POST /api/events (with JWT)
+    Note right of Client: Include creatorId in payload
     API_Gateway->>Event_Service: /events
     Event_Service-->>API_Gateway: Event ID
     API_Gateway-->>Client: 201 Created
     
+    %% Send Invitation (requires authentication)
     Client->>API_Gateway: POST /api/invitations (with JWT)
+    Note right of Client: Include eventId and userId of invitee
     API_Gateway->>Invitation_Service: /invitations
     Invitation_Service-->>API_Gateway: Invitation Data
     API_Gateway-->>Client: 201 Created
+    
+    %% Update RSVP Status (requires authentication)
+    Client->>API_Gateway: PUT /api/invitations/:id/status (with JWT)
+    Note right of Client: Include status and userId of invitee
+    API_Gateway->>Invitation_Service: /invitations/:id/status
+    Invitation_Service-->>API_Gateway: Updated Invitation
+    API_Gateway-->>Client: 200 OK
 ```
 
 ---
