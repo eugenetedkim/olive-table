@@ -133,6 +133,8 @@ DB_CONNECTION=mongodb://mongo:27017/invitations
 ```
 
 ### 3. Install Dependencies
+
+#### API Gateway
 ```bash
 cd services/api-gateway && npm install
 cd ../identity-service && npm install
@@ -140,24 +142,66 @@ cd ../event-service && npm install
 cd ../invitation-service && npm install
 ```
 
+####  Identity Service
+```bash
+cd services/api-gateway && npm install
+cd ../identity-service && npm install
+cd ../event-service && npm install
+cd ../invitation-service && npm install
+```
+
+#### Event Service
+```bash
+cd services/api-gateway && npm install
+```
+
+#### Invitation Service
+```bash
+cd ../identity-service && npm install
+```
+
 ### 4. Start Services
 
-#### Running services locally
+#### Add A Start Script For Each Service
 
-Run each service in separate terminals:
-```bash
-# Terminal 1 - Identity Service (port 3001)
-cd services/identity-service && npm start
-
-# Terminal 2 - Event Service (port 3002)  
-cd services/event-service && npm start
-
-# Terminal 3 - Invitation Service (port 3003)
-cd services/invitation-service && npm start
-
-# Terminal 4 - API Gateway (port 3000)
-cd services/api-gateway && npm start
+#### Add `"start": "node src/index.js"` under `scripts` to your `package.json` after `test`:
+```json
+{
+  "name": "api-gateway",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node src/index.js"
+  },
+  "keywords": [ ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.8.4",
+    "cors": "^2.8.5",
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
+    "express-rate-limit": "^7.5.0",
+    "helmet": "^8.1.0",
+    "http-proxy-middleware": "^3.0.5",
+    "jsonwebtoken": "^9.0.2",
+    "morgan": "^1.10.0",
+    "winston": "^3.17.0"
+  }
+}
 ```
+
+(Repeat this same step for each of the 4 services)
+
+#### Open a new terminal window, change directory to `/services/api-gatway`, and execute the `Start Script`:
+
+```bash
+cd olive-table/services/api-gatway && npm start
+```
+
+(Repeat this same step for each of the 4 services)
 
 #### Running services in Docker containers
 
