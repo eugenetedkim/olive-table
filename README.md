@@ -156,7 +156,9 @@ cd ../identity-service && npm install
 
 ### 4. Start Services
 
-Using Docker:
+#### Launch Docker Desktop and Build Container for each Service
+
+After launching Docker Desktop, run this command in a new terminal:
 ```bash
 docker compose up --build
 ```
