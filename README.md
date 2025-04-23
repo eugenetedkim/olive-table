@@ -197,10 +197,9 @@ curl -X POST http://localhost:3000/api/auth/login \
 
 #### 3. Use the returned token and user ID in subsequent requests:
 ```bash
-curl -X POST http://localhost:3002/events \
+curl -X POST http://localhost:3000/api/events \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  -H "Content-Type: application/json" \
   -d '{
     "title": "Test Event",
     "description": "Test Description",
