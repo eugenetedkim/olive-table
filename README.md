@@ -80,13 +80,14 @@ graph TD
   - Handles:
     - JWT Authentication
     - Path Rewriting:
-      - `/api/auth/*` → `/auth/*` Identity Service
+      - `/api/auth/*` → `/auth/*` (Identity Service)
+      - `/api/users/*` → `/users/*` (Identity Service)
       - `/api/events/*` → `/events/*` (Event Service)
       - `/api/invitations/*` → `/invitations/*` (Invitation Service)
 2. **Identity Service** (`/services/identity-service`)
   - Manages:
-    - User registration (`POST /api/auth/register`)
-    - User login (`POST /api/auth/login`)
+    - User registration (`POST /auth/register`)
+    - User login (`POST /auth/login`)
   - Key files:
     - `authController.js` (register/login logic)
     - `User.js` (Mongoose model)
@@ -287,13 +288,8 @@ sequenceDiagram
     Client->>API_Gateway: POST /api/auth/register
     API_Gateway->>Identity_Service: /auth/register
     Identity_Service-->>API_Gateway: JWT Token
-    API_Gateway-->>Client: JWT Token
-
-    Client-->API_Gateway: POST /api/auth/login
-    API_Gateway-->Identity_Service: /auth/login
-    Identity_Service-->>API_Gateway: JWT Token
-    API_Gateway-->>Client: JWT Token
-        
+    API_Gateway-->>Client: Token
+    
     Client->>API_Gateway: POST /api/events (with JWT)
     API_Gateway->>Event_Service: /events
     Event_Service-->>API_Gateway: Event ID
