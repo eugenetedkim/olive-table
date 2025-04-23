@@ -34,14 +34,41 @@ The Olive Table platform implements a microservices architecture to support KinM
 
 ```mermaid
 graph TD
-    A[Client] -->|HTTP Requests| B[API Gateway]
-    B -->|/api/auth/*| C[Identity Service]
-    B -->|/api/events → /events| D[Event Service]
-    B -->|/api/invitations → /api| E[Invitation Service]
+    Client[Client] -->|HTTP Requests| Gateway[API Gateway]
     
-    C --> F[(MongoDB Users)]
-    D --> G[(MongoDB Events)]
-    E --> H[(MongoDB Invitations)]
+    subgraph "API Gateway Path Rewriting"
+        Gateway -->|/api/auth/* → /auth/*| Auth[Auth Routing]
+        Gateway -->|/api/users/* → /users/*| Users[Users Routing]
+        Gateway -->|/api/events/* → /events/*| Events[Events Routing]
+        Gateway -->|/api/invitations/* → /api/*| Invitations[Invitations Routing]
+    end
+    
+    Auth -->|Forwards to| Identity[Identity Service]
+    Users -->|Forwards to| Identity
+    Events -->|Forwards to| EventService[Event Service]
+    Invitations -->|Forwards to| InvitationService[Invitation Service]
+    
+    subgraph "Service Internal Routes"
+        Identity -->|Handles /auth/*| AuthRoutes[Auth Routes]
+        Identity -->|Handles /users/*| UserRoutes[User Routes]
+        EventService -->|Handles /events/*| EventRoutes[Event Routes]
+        InvitationService -->|Handles /api/*| InvitationRoutes[Invitation Routes]
+    end
+    
+    AuthRoutes --> MongoDB[(MongoDB)]
+    UserRoutes --> MongoDB
+    EventRoutes --> MongoDB
+    InvitationRoutes --> MongoDB
+    
+    classDef gateway fill:#f9f,stroke:#333,stroke-width:2px
+    classDef service fill:#bbf,stroke:#333,stroke-width:1px
+    classDef database fill:#dfd,stroke:#333,stroke-width:1px
+    classDef routing fill:#ffd,stroke:#333,stroke-width:1px
+    
+    class Gateway gateway
+    class Identity,EventService,InvitationService service
+    class MongoDB database
+    class Auth,Users,Events,Invitations,AuthRoutes,UserRoutes,EventRoutes,InvitationRoutes routing
 ```
 
 ---
