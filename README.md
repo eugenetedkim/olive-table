@@ -156,9 +156,9 @@ cd ../identity-service && npm install
 
 ### 4. Start Services
 
-#### Add A Start Script For Each Service
+#### Running Locally
 
-#### Add `"start": "node src/index.js"` under `scripts` to your `package.json` after `test`:
+##### Add `"start": "node src/index.js"` under `scripts` to your `package.json` after `test`:
 ```json
 {
   "name": "api-gateway",
@@ -189,7 +189,7 @@ cd ../identity-service && npm install
 
 (Repeat this same step for each of the 4 services)
 
-#### Open a new terminal window, change directory to `/services/api-gatway`, and execute the `Start Script`:
+##### Open a new terminal window, change directory to `/services/api-gatway`, and execute the `Start Script`:
 
 ```bash
 cd olive-table/services/api-gatway && npm start
