@@ -181,7 +181,7 @@ cd services/api-gateway && npm install
 cd ../identity-service && npm install
 ```
 
-### 4. Start Services
+### 4. Start/Stop Services
 
 #### Launch Docker Desktop and Build Container for each Service
 
@@ -189,6 +189,18 @@ After launching Docker Desktop, run this command in a new terminal:
 ```bash
 docker compose up --build
 ```
+
+#### Complete Cleanup when you need a fresh start again:
+```bash
+docker compose down --volumes --rmi all --remove-orphans
+```
+
+This is the most thorough cleanup, which:
+
+- Stops and removes containers
+- Removes volumes
+- Removes images
+- Removes orphaned containers (containers not defined in your compose file but connected to the same network)
 
 ### 5. Verify Setup
 ```bash
