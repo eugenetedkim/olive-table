@@ -135,9 +135,9 @@ DB_CONNECTION=mongodb://mongo:27017/invitations
 ### 3. Install Dependencies
 ```bash
 cd services/api-gateway && npm install
-cd services/identity-service && npm install
-cd services/event-service && npm install
-cd services/invitation-service && npm install
+cd ../identity-service && npm install
+cd ../event-service && npm install
+cd ../invitation-service && npm install
 ```
 
 ### 4. Start Services
