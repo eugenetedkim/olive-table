@@ -285,17 +285,22 @@ sequenceDiagram
     participant Invitation_Service
 
     Client->>API_Gateway: POST /api/auth/register
-    API_Gateway->>Identity_Service: /register
+    API_Gateway->>Identity_Service: /auth/register
     Identity_Service-->>API_Gateway: JWT Token
-    API_Gateway-->>Client: Token
-    
+    API_Gateway-->>Client: JWT Token
+
+    Client-->API_Gateway: POST /api/auth/login
+    API_Gateway-->Identity_Service: /auth/login
+    Identity_Service-->>API_Gateway: JWT Token
+    API_Gateway-->>Client: JWT Token
+        
     Client->>API_Gateway: POST /api/events (with JWT)
     API_Gateway->>Event_Service: /events
     Event_Service-->>API_Gateway: Event ID
     API_Gateway-->>Client: 201 Created
     
     Client->>API_Gateway: POST /api/invitations (with JWT)
-    API_Gateway->>Invitation_Service: /api
+    API_Gateway->>Invitation_Service: /invitations
     Invitation_Service-->>API_Gateway: Invitation Data
     API_Gateway-->>Client: 201 Created
 ```
