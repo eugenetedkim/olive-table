@@ -58,10 +58,10 @@ app.use(express.json()); // Parses incoming requests with JSON payloads
 // Routes Registration
 // ------------------------------------------------------------------------
 
-app.use('/api/auth', authRoutes); // Mount authentication routes at /api/auth path
+app.use('/auth', authRoutes); // Mount authentication routes at /api/auth path
 // Routes for register, login, password reset, and other authentication operations
 
-app.use('/api/users', userRoutes);  // Mount user management routes at /api/users path
+app.use('/users', userRoutes);  // Mount user management routes at /api/users path
 // Routes for user profile management, user data retrieval, and other user operations
 
 // ------------------------------------------------------------------------

@@ -15,84 +15,56 @@ app.use(cors());
 app.use(helmet());
 app.use(morgan('dev'));
 
-// Health check (define before the proxy to ensure it's handled locally)
+// Health check endpoint
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok' });
 });
 
-// Auth verification middleware - returns Promise<boolean>
-const isAuthenticated = async (req, res) => {
-  return new Promise((resolve) => {
-    authMiddleware(req, res, () => {
-      // If we reach here, auth passed
-      resolve(true);
-    });
-  }).catch(() => {
-    // If auth middleware threw or called next(err)
-    return false;
-  });
-};
+// Auth routes (public) - Function-based pathRewrite
+app.use('/api/auth', createProxyMiddleware({
+  target: config.services.identity,
+  changeOrigin: true,
+  pathRewrite: function(path, req) {
+    // Use originalUrl which contains the full path including the parts Express consumed
+    const newPath = req.originalUrl.replace(/^\/api\/auth/, '/auth');
+    console.log(`Rewriting path from ${req.originalUrl} to ${newPath}`);
+    return newPath;
+  },
+  logLevel: 'debug'
+}));
 
-// Single proxy at root level that handles all routes
-app.use('/', async (req, res, next) => {
-  const path = req.originalUrl;
-  
-  // Skip the health endpoint
-  if (path === '/health') {
-    return next();
+// User routes (protected) - Function-based pathRewrite
+app.use('/api/users', authMiddleware, createProxyMiddleware({
+  target: config.services.identity,
+  changeOrigin: true,
+  pathRewrite: function(path, req) {
+    const newPath = req.originalUrl.replace(/^\/api\/users/, '/users');
+    console.log(`Rewriting path from ${req.originalUrl} to ${newPath}`);
+    return newPath;
   }
-  
-  // Auth paths - no auth required
-  if (path.startsWith('/api/auth')) {
-    createProxyMiddleware({
-      target: config.services.identity,
-      changeOrigin: true,
-      // No path rewrite needed for auth routes
-    })(req, res, next);
-    return;
+}));
+
+// Events routes (protected) - Function-based pathRewrite
+app.use('/api/events', authMiddleware, createProxyMiddleware({
+  target: config.services.events,
+  changeOrigin: true,
+  pathRewrite: function(path, req) {
+    const newPath = req.originalUrl.replace(/^\/api\/events/, '/events');
+    console.log(`Rewriting path from ${req.originalUrl} to ${newPath}`);
+    return newPath;
   }
-  
-  // Protected routes need auth check
-  if (path.startsWith('/api/events') || path.startsWith('/api/invitations')) {
-    try {
-      // Apply auth middleware
-      const authed = await new Promise((resolve) => {
-        authMiddleware(req, res, () => resolve(true));
-      }).catch(() => false);
-      
-      if (!authed) {
-        // Auth middleware would have responded with 401/403
-        return;
-      }
-      
-      // Auth passed, determine target and path rewriting
-      let target;
-      let pathRewrite;
-      
-      if (path.startsWith('/api/events')) {
-        target = config.services.events;
-        req.url = req.url.replace(/^\/api\/events/, '/events');
-        console.log(`Rewriting ${path} to ${req.url}`);
-      } else if (path.startsWith('/api/invitations')) {
-        target = config.services.invitations;
-        req.url = req.url.replace(/^\/api\/invitations/, '/api');
-        console.log(`Rewriting ${path} to ${req.url}`);
-      }
-      
-      // Forward the request
-      createProxyMiddleware({
-        target,
-        changeOrigin: true
-      })(req, res, next);
-    } catch (err) {
-      next(err);
-    }
-    return;
+}));
+
+// Invitations routes (protected) - Function-based pathRewrite
+app.use('/api/invitations', authMiddleware, createProxyMiddleware({
+  target: config.services.invitations,
+  changeOrigin: true,
+  pathRewrite: function(path, req) {
+    const newPath = req.originalUrl.replace(/^\/api\/invitations/, '/api');
+    console.log(`Rewriting path from ${req.originalUrl} to ${newPath}`);
+    return newPath;
   }
-  
-  // Pass through for any other routes
-  next();
-});
+}));
 
 // Catch-all for undefined routes
 app.use((req, res) => {

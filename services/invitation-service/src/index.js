@@ -11,7 +11,7 @@ connectDB();
 app.use(cors());
 app.use(morgan('dev'));
 app.use(express.json());
-app.use('/api/invitations', invitationRoutes);
+app.use('/invitations', invitationRoutes);
 
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok' });
