@@ -182,12 +182,12 @@ cd ../identity-service && npm install
 
 #### Event Service
 ```bash
-cd services/api-gateway && npm install
+cd ../event-service && npm install
 ```
 
 #### Invitation Service
 ```bash
-cd ../identity-service && npm install
+cd ../invitation-service && npm install
 ```
 
 ### 4. Start/Stop Services
