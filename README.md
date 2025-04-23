@@ -156,50 +156,7 @@ cd ../identity-service && npm install
 
 ### 4. Start Services
 
-#### Running Locally
-
-##### Add `"start": "node src/index.js"` under `scripts` to your `package.json` after `test`:
-```json
-{
-  "name": "api-gateway",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node src/index.js"
-  },
-  "keywords": [ ],
-  "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "axios": "^1.8.4",
-    "cors": "^2.8.5",
-    "dotenv": "^16.5.0",
-    "express": "^5.1.0",
-    "express-rate-limit": "^7.5.0",
-    "helmet": "^8.1.0",
-    "http-proxy-middleware": "^3.0.5",
-    "jsonwebtoken": "^9.0.2",
-    "morgan": "^1.10.0",
-    "winston": "^3.17.0"
-  }
-}
-```
-
-(Repeat this same step for each of the 4 services)
-
-##### Open a new terminal window, change directory to `/services/api-gatway`, and execute the `Start Script`:
-
-```bash
-cd olive-table/services/api-gatway && npm start
-```
-
-(Repeat this same step for each of the 4 services)
-
-#### Running services in Docker containers
-
-Or using Docker:
+Using Docker:
 ```bash
 docker compose up --build
 ```
