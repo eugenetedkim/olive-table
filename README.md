@@ -40,7 +40,7 @@ graph TD
         Gateway -->|/api/auth/* → /auth/*| Auth[Auth Routing]
         Gateway -->|/api/users/* → /users/*| Users[Users Routing]
         Gateway -->|/api/events/* → /events/*| Events[Events Routing]
-        Gateway -->|/api/invitations/* → /api/*| Invitations[Invitations Routing]
+        Gateway -->|/api/invitations/* → /invitations/*| Invitations[Invitations Routing]
     end
     
     Auth -->|Forwards to| Identity[Identity Service]
@@ -52,7 +52,7 @@ graph TD
         Identity -->|Handles /auth/*| AuthRoutes[Auth Routes]
         Identity -->|Handles /users/*| UserRoutes[User Routes]
         EventService -->|Handles /events/*| EventRoutes[Event Routes]
-        InvitationService -->|Handles /api/*| InvitationRoutes[Invitation Routes]
+        InvitationService -->|Handles /invitations/*| InvitationRoutes[Invitation Routes]
     end
     
     AuthRoutes --> MongoDB[(MongoDB)]
