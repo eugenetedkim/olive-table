@@ -80,9 +80,9 @@ graph TD
   - Handles:
     - JWT Authentication
     - Path Rewriting:
-      - `/api/auth/*` → Identity Service
+      - `/api/auth/*` → `/auth/*` Identity Service
       - `/api/events/*` → `/events/*` (Event Service)
-      - `/api/invitations/*` → `/api/*` (Invitation Service)
+      - `/api/invitations/*` → `/invitations/*` (Invitation Service)
 2. **Identity Service** (`/services/identity-service`)
   - Manages:
     - User registration (`POST /api/auth/register`)
@@ -110,16 +110,24 @@ graph TD
 
 ### 1. Prerequisites
  - [Node.js](https://www.nodejs.org) (v18+ recommended)
+
+Check if installed already, otherwise, install.
 ```bash
 node --version
 # or
 node -v
 ```
+
  - [MongoDB](https://www.mongodb.com) (running locally or via Docker)
+
+Check if installed already, otherwise, install.
 ```bash
 mongod --version
 ```
+
  - [Docker](https://www.docker.com/) (optional, for containerized setup)
+
+Check if installed already, otherwise, install.
 ```bash
 docker --version
 # or
