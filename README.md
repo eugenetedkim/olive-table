@@ -185,7 +185,12 @@ curl http://localhost:3003/health # Should return { "status": "ok" }
 ```bash
 curl -X POST http://localhost:3000/api/auth/register \
   -H "Content-Type: application/json" \
-  -d '{"email":"test@example.com","password":"password123"}'
+  -d '{
+    "firstName":"Eugene",
+    "lastName":"Kim",
+    "email":"test@example.com",
+    "password":"password123"
+    }'
 ```
 
 #### 2. Login to get JWT token and user ID:
