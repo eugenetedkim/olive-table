@@ -137,17 +137,11 @@ DB_CONNECTION=mongodb://mongo:27017/invitations
 #### API Gateway
 ```bash
 cd services/api-gateway && npm install
-cd ../identity-service && npm install
-cd ../event-service && npm install
-cd ../invitation-service && npm install
 ```
 
 ####  Identity Service
 ```bash
-cd services/api-gateway && npm install
 cd ../identity-service && npm install
-cd ../event-service && npm install
-cd ../invitation-service && npm install
 ```
 
 #### Event Service
