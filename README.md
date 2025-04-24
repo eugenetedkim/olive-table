@@ -285,13 +285,13 @@ sequenceDiagram
     participant Event_Service
     participant Invitation_Service
 
-    %% User Registration
+    %% User Registration (now just creates user)
     Client->>API_Gateway: POST /api/auth/register
     API_Gateway->>Identity_Service: /auth/register
-    Identity_Service-->>API_Gateway: JWT Token & User ID
-    API_Gateway-->>Client: Token & User ID
+    Identity_Service-->>API_Gateway: 201 Created
+    API_Gateway-->>Client: Registration success message
     
-    %% User Login (separate operation, could be done later)
+    %% User Login (needed to get JWT)
     Client->>API_Gateway: POST /api/auth/login
     API_Gateway->>Identity_Service: /auth/login
     Identity_Service-->>API_Gateway: JWT Token & User ID
