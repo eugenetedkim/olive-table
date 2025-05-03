@@ -60,7 +60,7 @@ app.use('/api/invitations', authMiddleware, createProxyMiddleware({
   target: config.services.invitations,
   changeOrigin: true,
   pathRewrite: function(path, req) {
-    const newPath = req.originalUrl.replace(/^\/api\/invitations/, '/api');
+    const newPath = req.originalUrl.replace(/^\/api\/invitations/, '/invitations');
     console.log(`Rewriting path from ${req.originalUrl} to ${newPath}`);
     return newPath;
   }

@@ -9,7 +9,6 @@ exports.register = async (req, res) => {
     const { email, password, firstName, lastName } = req.body;
 
     let user = await User.findOne({ email });
-
     if (user) {
       return res.status(400).json({ message: 'User already exists' });
     }
@@ -29,24 +28,28 @@ exports.register = async (req, res) => {
       }
     };
 
-    jwt.sign(
-      payload,
-      process.env.JWT_SECRET,
-      { expiresIn: '24' },
-      (err, token) => {
-        if (err) throw err;
+    // jwt.sign(
+    //   payload,
+    //   process.env.JWT_SECRET,
+    //   { expiresIn: '24' },
+    //   (err, token) => {
+    //     if (err) throw err;
 
-        res.status(201).json({
-          token,
-          user: {
-            id: user.id,
-            email: user.email,
-            firstName: user.firstName,
-            lastName: user.lastName
-          }
-        });
-      }
-    );
+    //     res.status(201).json({
+    //       token,
+    //       user: {
+    //         id: user.id,
+    //         email: user.email,
+    //         firstName: user.firstName,
+    //         lastName: user.lastName
+    //       }
+    //     });
+    //   }
+    // );
+
+    return res.status(201).json({
+      message: 'User registered successfully. Please log in.'
+    });
   } catch (err) {
     // Improved error handling with proper status codes
     
