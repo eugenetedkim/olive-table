@@ -34,14 +34,41 @@ The Olive Table platform implements a microservices architecture to support KinM
 
 ```mermaid
 graph TD
-    A[Client] -->|HTTP Requests| B[API Gateway]
-    B -->|/api/auth/*| C[Identity Service]
-    B -->|/api/events → /events| D[Event Service]
-    B -->|/api/invitations → /api| E[Invitation Service]
+    Client[Client] -->|HTTP Requests| Gateway[API Gateway]
     
-    C --> F[(MongoDB Users)]
-    D --> G[(MongoDB Events)]
-    E --> H[(MongoDB Invitations)]
+    subgraph "API Gateway Path Rewriting"
+        Gateway -->|/api/auth/* → /auth/*| Auth[Auth Routing]
+        Gateway -->|/api/users/* → /users/*| Users[Users Routing]
+        Gateway -->|/api/events/* → /events/*| Events[Events Routing]
+        Gateway -->|/api/invitations/* → /invitations/*| Invitations[Invitations Routing]
+    end
+    
+    Auth -->|Forwards to| Identity[Identity Service]
+    Users -->|Forwards to| Identity
+    Events -->|Forwards to| EventService[Event Service]
+    Invitations -->|Forwards to| InvitationService[Invitation Service]
+    
+    subgraph "Service Internal Routes"
+        Identity -->|Handles /auth/*| AuthRoutes[Auth Routes]
+        Identity -->|Handles /users/*| UserRoutes[User Routes]
+        EventService -->|Handles /events/*| EventRoutes[Event Routes]
+        InvitationService -->|Handles /invitations/*| InvitationRoutes[Invitation Routes]
+    end
+    
+    AuthRoutes --> MongoDB[(MongoDB)]
+    UserRoutes --> MongoDB
+    EventRoutes --> MongoDB
+    InvitationRoutes --> MongoDB
+    
+    classDef gateway fill:#f9f,stroke:#333,stroke-width:2px
+    classDef service fill:#bbf,stroke:#333,stroke-width:1px
+    classDef database fill:#dfd,stroke:#333,stroke-width:1px
+    classDef routing fill:#ffd,stroke:#333,stroke-width:1px
+    
+    class Gateway gateway
+    class Identity,EventService,InvitationService service
+    class MongoDB database
+    class Auth,Users,Events,Invitations,AuthRoutes,UserRoutes,EventRoutes,InvitationRoutes routing
 ```
 
 ---
@@ -53,13 +80,14 @@ graph TD
   - Handles:
     - JWT Authentication
     - Path Rewriting:
-      - `/api/auth/*` → Identity Service
+      - `/api/auth/*` → `/auth/*` (Identity Service)
+      - `/api/users/*` → `/users/*` (Identity Service)
       - `/api/events/*` → `/events/*` (Event Service)
-      - `/api/invitations/*` → `/api/*` (Invitation Service)
+      - `/api/invitations/*` → `/invitations/*` (Invitation Service)
 2. **Identity Service** (`/services/identity-service`)
   - Manages:
-    - User registration (`POST /api/auth/register`)
-    - User login (`POST /api/auth/login`)
+    - User registration (`POST /auth/register`)
+    - User login (`POST /auth/login`)
   - Key files:
     - `authController.js` (register/login logic)
     - `User.js` (Mongoose model)
@@ -83,16 +111,24 @@ graph TD
 
 ### 1. Prerequisites
  - [Node.js](https://www.nodejs.org) (v18+ recommended)
+
+Check if installed already, otherwise, install.
 ```bash
 node --version
 # or
 node -v
 ```
+
  - [MongoDB](https://www.mongodb.com) (running locally or via Docker)
+
+Check if installed already, otherwise, install.
 ```bash
 mongod --version
 ```
+
  - [Docker](https://www.docker.com/) (optional, for containerized setup)
+
+Check if installed already, otherwise, install.
 ```bash
 docker --version
 # or
@@ -146,15 +182,15 @@ cd ../identity-service && npm install
 
 #### Event Service
 ```bash
-cd services/api-gateway && npm install
+cd ../event-service && npm install
 ```
 
 #### Invitation Service
 ```bash
-cd ../identity-service && npm install
+cd ../invitation-service && npm install
 ```
 
-### 4. Start Services
+### 4. Start/Stop Services
 
 #### Launch Docker Desktop and Build Container for each Service
 
@@ -162,6 +198,18 @@ After launching Docker Desktop, run this command in a new terminal:
 ```bash
 docker compose up --build
 ```
+
+#### Complete Cleanup when you need a fresh start again:
+```bash
+docker compose down --volumes --rmi all --remove-orphans
+```
+
+This is the most thorough cleanup, which:
+
+- Stops and removes containers
+- Removes volumes
+- Removes images
+- Removes orphaned containers (containers not defined in your compose file but connected to the same network)
 
 ### 5. Verify Setup
 ```bash
@@ -185,7 +233,12 @@ curl http://localhost:3003/health # Should return { "status": "ok" }
 ```bash
 curl -X POST http://localhost:3000/api/auth/register \
   -H "Content-Type: application/json" \
-  -d '{"email":"test@example.com","password":"password123"}'
+  -d '{
+    "firstName":"Eugene",
+    "lastName":"Kim",
+    "email":"test@example.com",
+    "password":"password123"
+    }'
 ```
 
 #### 2. Login to get JWT token and user ID:
@@ -232,20 +285,38 @@ sequenceDiagram
     participant Event_Service
     participant Invitation_Service
 
+    %% User Registration (now just creates user)
     Client->>API_Gateway: POST /api/auth/register
-    API_Gateway->>Identity_Service: /register
-    Identity_Service-->>API_Gateway: JWT Token
-    API_Gateway-->>Client: Token
+    API_Gateway->>Identity_Service: /auth/register
+    Identity_Service-->>API_Gateway: 201 Created
+    API_Gateway-->>Client: Registration success message
     
+    %% User Login (needed to get JWT)
+    Client->>API_Gateway: POST /api/auth/login
+    API_Gateway->>Identity_Service: /auth/login
+    Identity_Service-->>API_Gateway: JWT Token & User ID
+    API_Gateway-->>Client: Token & User ID
+    
+    %% Event Creation (requires authentication)
     Client->>API_Gateway: POST /api/events (with JWT)
+    Note right of Client: Include creatorId in payload
     API_Gateway->>Event_Service: /events
     Event_Service-->>API_Gateway: Event ID
     API_Gateway-->>Client: 201 Created
     
+    %% Send Invitation (requires authentication)
     Client->>API_Gateway: POST /api/invitations (with JWT)
-    API_Gateway->>Invitation_Service: /api
+    Note right of Client: Include eventId and userId of invitee
+    API_Gateway->>Invitation_Service: /invitations
     Invitation_Service-->>API_Gateway: Invitation Data
     API_Gateway-->>Client: 201 Created
+    
+    %% Update RSVP Status (requires authentication)
+    Client->>API_Gateway: PUT /api/invitations/:id/status (with JWT)
+    Note right of Client: Include status and userId of invitee
+    API_Gateway->>Invitation_Service: /invitations/:id/status
+    Invitation_Service-->>API_Gateway: Updated Invitation
+    API_Gateway-->>Client: 200 OK
 ```
 
 ---
