@@ -27,6 +27,7 @@ The Olive Table platform implements a microservices architecture to support KinM
 - Node.js backend services
 - RESTful API design
 - Docker support for containerization
+- Automated integration testing
 
 ---
 
@@ -137,7 +138,7 @@ docker -v
 
 ### 2. Clone and Configure
 ```bash
-git clone https://github.com/your-repo/olive-table.git
+git clone https://github.com/eugenetedkim/olive-table.git
 cd olive-table
 ```
 
@@ -211,7 +212,30 @@ This is the most thorough cleanup, which:
 - Removes images
 - Removes orphaned containers (containers not defined in your compose file but connected to the same network)
 
-### 5. Verify Setup
+### 5. Run Integration Tests
+
+We have automated integration tests that verify the complete flow:
+
+```bash
+# Make the test script executable (first time only)
+chmod +x test-integration.sh
+
+# Run the integration tests
+./test-integration.sh
+```
+
+The integration test will:
+1. Start all services
+2. Create test users (creator and invitee)
+3. Authenticate users and obtain JWT tokens
+4. Create events
+5. Send invitations
+6. Update invitation status (accept/decline)
+7. Verify the complete flow
+
+For manual testing, see the `INTEGRATION_TESTS.md` file for detailed curl commands.
+
+### 6. Verify Setup
 ```bash
 # Check services directly
 
@@ -228,7 +252,7 @@ curl http://localhost:3002/health # Should return { "status": "ok" }
 curl http://localhost:3003/health # Should return { "status": "ok" }
 ```
 
-### 6. First-Time User Setup
+### 7. First-Time User Setup
 #### 1. Register a user:
 ```bash
 curl -X POST http://localhost:3000/api/auth/register \
@@ -270,6 +294,7 @@ curl -X POST http://localhost:3000/api/events \
 - **MongoDB connection**: Verify MongoDB is running (`mongod`)
 - **Environment variables**: Double-check `.env` files in each service
 - **Docker issues**: Run `docker system prune` if containers fail to start
+- **Integration test fails**: Check if all services are running with `docker ps`
 
 ---
 
@@ -394,6 +419,27 @@ services/
 
 ---
 
+## Testing
+
+### Integration Tests
+The project includes comprehensive integration tests that validate the complete workflow:
+
+```bash
+./test-integration.sh
+```
+
+This automated test:
+1. Creates test users (creator and invitee)
+2. Authenticates both users
+3. Creates an event
+4. Sends an invitation
+5. Responds to the invitation
+6. Verifies all operations succeeded
+
+For detailed manual testing instructions, see `INTEGRATION_TESTS.md`.
+
+---
+
 ## Key Implementation Files
 
 | Service          | File                          | Key Functions/Middleware       |
@@ -402,7 +448,7 @@ services/
 |                  | `index.js`                    | Proxy configuration            |
 | **Identity**     | `authController.js`           | `register()`, `login()`        |
 | **Event**        | `eventController.js`          | `createEvent()`, `getEvents()` |
-| **Invitation**   | `invitationController.js`     | `createInvitation()`           |
+| **Invitation**   | `invitationController.js`     | `createInvitation()`, `updateInvitationStatus()` |
 
 ### Usage Examples:
 - **Authentication**: `verifyToken()` middleware checks JWT before routing to protected services
@@ -430,7 +476,7 @@ services/
 
 - `POST /api/invitations` - Create invitation
 - `GET /api/invitations` - List invitations
-- `PUT /api/invitations/:id` - Update RSVP status
+- `PUT /api/invitations/:id/status` - Update RSVP status
 
 ---
 
@@ -460,6 +506,15 @@ docker compose logs identity-service -f # Logs for the identity service
 docker compose logs event-service -f # Logs for the event service
 docker compose logs invitation-service -f # Logs for the invitation service
 ```
+
+---
+
+## Project Versioning
+
+The project uses semantic versioning with tagged releases:
+- `v1.0.0-docker-baseline` - Complete working Docker setup (current baseline)
+
+Before any major migrations or architectural changes, create a new tag to preserve the working state.
 
 ---
 
