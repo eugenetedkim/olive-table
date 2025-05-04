@@ -1,597 +1,390 @@
-# Olive Table: Dietary-Aware Social Gathering Platform
+# Olive Table
 
-**Olive Table** is a comprehensive platform for dietary profile management and social gathering coordination. Built with a microservices architecture and TypeScript, it simplifies planning meals and events where diverse dietary needs must be accommodated.
-
-## The Story Behind Olive Table
-
-Just as an olive tree symbolizes peace, wisdom, and abundance, Olive Table fosters meaningful connections around food. We believe that breaking bread together should be inclusive, not exclusive—and dietary restrictions shouldn't exclude anyone from the table.
-
-"A table set for celebration becomes a humble altar when shared among friends and strangers alike."
-
----
-
-## Project Summary
-
-The Olive Table platform implements a microservices architecture to support a dietary-aware social gathering platform that helps users plan events while accounting for diverse dietary needs, preferences, and restrictions.
-
-## Architecture Philosophy
-
-### Domain-Driven Design (DDD)
-The Olive Table platform embraces DDD principles:
-
-1. **Bounded Contexts**: Each microservice represents a bounded context
-   - Identity (User authentication and profile management)
-   - Event (Event planning and management)
-   - Invitation (Social interactions and RSVPs)
-
-2. **Domain Models**: Rich domain objects with business logic
-   - User aggregate with dietary preferences and social connections
-   - Event aggregate with visibility and dietary requirements
-   - Invitation aggregate managing invitation lifecycle
-
-3. **DDD + MongoDB + TypeScript**:
-   - MongoDB documents naturally represent domain aggregates
-   - Type-safe domain models prevent bugs
-   - Mongoose schemas enforce domain invariants
-   - Business rules embedded in domain objects
-
-### Project Structure (DDD Layout)
-```
-services/
-├── identity-service/           # Identity Bounded Context
-│   ├── src/domain/            # Domain Layer
-│   │   └── models/            # Domain Aggregates
-│   │       └── User.js        # User Aggregate
-│   ├── src/api/               # Application Layer
-│   │   ├── controllers/       # Application Services
-│   │   └── routes/            # API Endpoints
-│   └── src/infrastructure/    # Infrastructure Layer
-│       └── db/                # Persistence
-│
-├── event-service/             # Event Bounded Context
-│   └── [Similar DDD structure]
-│
-└── invitation-service/        # Invitation Bounded Context
-    └── [Similar DDD structure]
-```
-
-### DDD Patterns Implemented
-- **Aggregates**: User, Event, Invitation as atomic units
-- **Domain Objects**: Rich models with business behavior
-- **Value Objects**: DietaryPreferences, EventVisibility
-- **Repository Pattern**: Database abstraction
-- **Domain Services**: Complex business logic coordination
-
-### Future Scalability
-- Adding social features leverages existing DDD structure
-- New bounded contexts can be added independently
-- Domain models evolve without breaking changes
-
-### Key Features
-- User dietary profile management with restriction flexibility scales
-- Event planning and invitation system with RSVP tracking
-- Group dietary analysis and compatibility visualization
-- Recipe management with dietary filtering
-- Food and beverage discovery sharing
-- Content creator integration
-
-### Technology Stack
-- Microservices architecture for scalability
-- JWT-based authentication
-- MongoDB for data persistence
-- Node.js backend services
-- RESTful API design
-- Docker support for containerization
-- Automated integration testing
+<div align="center">
+  <img src="assets/olive-logo.png" alt="Olive Table Logo" width="200px" style="margin-bottom: 20px;" />
+  
+  **A dietary-aware social gathering platform that brings people together around food, regardless of dietary restrictions.**
+  
+  [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](CONTRIBUTING.md) [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](LICENSE)
+</div>
 
 ---
 
-## Architectural Overview
+## 🌿 About Olive Table
+
+Just as an olive tree symbolizes peace, wisdom, and abundance, Olive Table fosters meaningful connections around food. We believe that breaking bread together should unite, not exclude—our platform ensures dietary restrictions never keep anyone from the table.
+
+**Our Mission**: Make inclusive meal planning effortless by helping hosts account for all dietary needs while maintaining celebration and community.
+
+---
+
+## ✨ Key Features
+
+### 🍽️ Smart Event Planning
+- Create dietary-aware events and gatherings
+- Automatic guest dietary profile collection
+- Visual dietary compatibility dashboard
+- Intelligent menu recommendations
+
+### 👥 User Management
+- Detailed dietary profile creation
+- Household and family member support
+- Flexible restriction severity levels
+- Social connection management
+
+### 📊 Dietary Intelligence
+- Group compatibility analysis
+- Common restrictions visualization
+- Accommodation suggestions
+- Real-time dietary requirement tracking
+
+---
+
+## 🏗️ Architecture
+
+Olive Table is built as a microservices architecture following Domain-Driven Design (DDD) principles:
 
 ```mermaid
 graph TD
-    Client[Client] -->|HTTP Requests| Gateway[API Gateway]
-    
-    subgraph "API Gateway Path Rewriting"
-        Gateway -->|/api/auth/* → /auth/*| Auth[Auth Routing]
-        Gateway -->|/api/users/* → /users/*| Users[Users Routing]
-        Gateway -->|/api/events/* → /events/*| Events[Events Routing]
-        Gateway -->|/api/invitations/* → /invitations/*| Invitations[Invitations Routing]
+    subgraph "Olive Table Platform"
+        Client[Client Applications] -->|API Calls| Gateway[API Gateway]
+        
+        Gateway -->|JWT Auth| Identity[Identity Service]
+        Gateway -->|Events| Event[Event Service]
+        Gateway -->|Invites| Invite[Invitation Service]
+        
+        Identity --> MongoDB[MongoDB]
+        Event --> MongoDB
+        Invite --> MongoDB
     end
     
-    Auth -->|Forwards to| Identity[Identity Service]
-    Users -->|Forwards to| Identity
-    Events -->|Forwards to| EventService[Event Service]
-    Invitations -->|Forwards to| InvitationService[Invitation Service]
+    classDef service fill:#4a90e2,stroke:#333,stroke-width:2px,color:white
+    classDef database fill:#7aa25c,stroke:#333,stroke-width:2px,color:white
+    classDef gateway fill:#f5a623,stroke:#333,stroke-width:2px,color:white
     
-    subgraph "Service Internal Routes"
-        Identity -->|Handles /auth/*| AuthRoutes[Auth Routes]
-        Identity -->|Handles /users/*| UserRoutes[User Routes]
-        EventService -->|Handles /events/*| EventRoutes[Event Routes]
-        InvitationService -->|Handles /invitations/*| InvitationRoutes[Invitation Routes]
-    end
-    
-    AuthRoutes --> MongoDB[(MongoDB)]
-    UserRoutes --> MongoDB
-    EventRoutes --> MongoDB
-    InvitationRoutes --> MongoDB
-    
-    classDef gateway fill:#f9f,stroke:#333,stroke-width:2px
-    classDef service fill:#bbf,stroke:#333,stroke-width:1px
-    classDef database fill:#dfd,stroke:#333,stroke-width:1px
-    classDef routing fill:#ffd,stroke:#333,stroke-width:1px
-    
-    class Gateway gateway
-    class Identity,EventService,InvitationService service
+    class Identity,Event,Invite service
     class MongoDB database
-    class Auth,Users,Events,Invitations,AuthRoutes,UserRoutes,EventRoutes,InvitationRoutes routing
+    class Gateway gateway
 ```
+
+### 🧩 Services Overview
+
+| Service | Purpose | Port |
+|---------|---------|------|
+| **API Gateway** | Request routing & authentication | 3000 |
+| **Identity Service** | User management & auth | 3001 |
+| **Event Service** | Event CRUD operations | 3002 |
+| **Invitation Service** | RSVP management | 3003 |
 
 ---
 
-## Key Components
+## 🚀 Getting Started
 
-1. **API Gateway** (`/services/api-gateway`)
-  - Entry point for all requests
-  - Handles:
-    - JWT Authentication
-    - Path Rewriting:
-      - `/api/auth/*` → `/auth/*` (Identity Service)
-      - `/api/users/*` → `/users/*` (Identity Service)
-      - `/api/events/*` → `/events/*` (Event Service)
-      - `/api/invitations/*` → `/invitations/*` (Invitation Service)
-2. **Identity Service** (`/services/identity-service`)
-  - Manages:
-    - User registration (`POST /auth/register`)
-    - User login (`POST /auth/login`)
-  - Key files:
-    - `authController.js` (register/login logic)
-    - `User.js` (Mongoose model)
-3. **Event Service** (`/services/event-service`)
-  - Handles:
-    - Event CRUD operations
-  - Key endpoints:
-    - `POST /events` (Create event)
-    - `GET /events/:id` (Get event)
-4. **Invitation Service** (`/services/invitation-service`)
-  - Manages:
-    - Invitations
-    - RSVPs
-  - Key files:
-    - `invitationController.js`
-    - `Invitation.js` (Mongoose model)
+### Prerequisites
+
+Ensure you have the following installed:
+- [Node.js](https://nodejs.org/) (v18+)
+- [Docker](https://www.docker.com/) & Docker Compose
+- [MongoDB](https://www.mongodb.com/) (for local development)
+
+### Quick Start
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/eugenetedkim/olive-table.git
+   cd olive-table
+   ```
+
+2. **Set up environment variables**
+   ```bash
+   # Copy example files and fill in your values
+   cp services/api-gateway/.env.example services/api-gateway/.env
+   cp services/identity-service/.env.example services/identity-service/.env
+   cp services/event-service/.env.example services/event-service/.env
+   cp services/invitation-service/.env.example services/invitation-service/.env
+   ```
+
+3. **Start the services**
+   ```bash
+   docker compose up --build
+   ```
+
+4. **Verify the installation**
+   ```bash
+   # Check all services are running
+   docker ps
+   
+   # Test API endpoints
+   curl http://localhost:3000/health
+   ```
 
 ---
 
-## Local Development Setup
+## 📡 API Documentation
 
-### 1. Prerequisites
- - [Node.js](https://www.nodejs.org) (v18+ recommended)
+### Authentication
 
-Check if installed already, otherwise, install.
-```bash
-node --version
-# or
-node -v
-```
-
- - [MongoDB](https://www.mongodb.com) (running locally or via Docker)
-
-Check if installed already, otherwise, install.
-```bash
-mongod --version
-```
-
- - [Docker](https://www.docker.com/) (optional, for containerized setup)
-
-Check if installed already, otherwise, install.
-```bash
-docker --version
-# or
-docker -v
-```
-
-### 2. Clone and Configure
-```bash
-git clone https://github.com/eugenetedkim/olive-table.git
-cd olive-table
-```
-
-#### Create `.env` files in each service directory:
-```bash
-# services/api-gateway/.env
-NODE_ENV=development
-PORT=3000
-IDENTITY_SERVICE=http://identity-service:3001
-EVENT_SERVICE=http://event-service:3002
-INVITATION_SERVICE=http://invitation-service:3003
-JWT_SECRET=replace_this_with_a_long_random_string_you_generated
-
-# services/identity-service/.env
-NODE_ENV=development
-PORT=3001
-DB_CONNECTION=mongodb://mongo:27017/identity
-JWT_SECRET=same_as_jwt_secret_stored_in_api_gateway_.env
-
-# services/event-service/.env 
-NODE_ENV=development
-PORT=3002
-DB_CONNECTION=mongodb://mongo:27017/events
-
-# services/invitation-service/.env
-NODE_ENV=development
-PORT=3003
-DB_CONNECTION=mongodb://mongo:27017/invitations
-```
-
-### 3. Install Dependencies
-
-#### API Gateway
-```bash
-cd services/api-gateway && npm install
-```
-
-####  Identity Service
-```bash
-cd ../identity-service && npm install
-```
-
-#### Event Service
-```bash
-cd ../event-service && npm install
-```
-
-#### Invitation Service
-```bash
-cd ../invitation-service && npm install
-```
-
-### 4. Start/Stop Services
-
-#### Launch Docker Desktop and Build Container for each Service
-
-After launching Docker Desktop, run this command in a new terminal:
-```bash
-docker compose up --build
-```
-
-#### Complete Cleanup when you need a fresh start again:
-```bash
-docker compose down --volumes --rmi all --remove-orphans
-```
-
-This is the most thorough cleanup, which:
-
-- Stops and removes containers
-- Removes volumes
-- Removes images
-- Removes orphaned containers (containers not defined in your compose file but connected to the same network)
-
-### 5. Run Integration Tests
-
-We have automated integration tests that verify the complete flow:
-
-```bash
-# Make the test script executable (first time only)
-chmod +x test-integration.sh
-
-# Run the integration tests
-./test-integration.sh
-```
-
-The integration test will:
-1. Start all services
-2. Create test users (creator and invitee)
-3. Authenticate users and obtain JWT tokens
-4. Create events
-5. Send invitations
-6. Update invitation status (accept/decline)
-7. Verify the complete flow
-
-For manual testing, see the `INTEGRATION_TESTS.md` file for detailed curl commands.
-
-### 6. Verify Setup
-```bash
-# Check services directly
-
-# Api-Gateway   
-curl http://localhost:3000/health # Should return { "status": "ok" }
-
-# Identity
-curl http://localhost:3001/health # Should return { "status": "ok" }
-
-# Events
-curl http://localhost:3002/health # Should return { "status": "ok" }
-
-# Invitation
-curl http://localhost:3003/health # Should return { "status": "ok" }
-```
-
-### 7. First-Time User Setup
-#### 1. Register a user:
+**Register a new user:**
 ```bash
 curl -X POST http://localhost:3000/api/auth/register \
   -H "Content-Type: application/json" \
   -d '{
-    "firstName":"Eugene",
-    "lastName":"Kim",
-    "email":"test@example.com",
-    "password":"password123"
-    }'
+    "firstName": "John",
+    "lastName": "Doe",
+    "email": "john@example.com",
+    "password": "securePassword123"
+  }'
 ```
 
-#### 2. Login to get JWT token and user ID:
+**Login and get JWT token:**
 ```bash
 curl -X POST http://localhost:3000/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"test@example.com","password":"password123"}'
+  -d '{
+    "email": "john@example.com",
+    "password": "securePassword123"
+  }'
 ```
 
-#### 3. Use the returned token and user ID in subsequent requests:
+### Event Management
+
+**Create an event:**
 ```bash
 curl -X POST http://localhost:3000/api/events \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -d '{
-    "title": "Test Event",
-    "description": "Test Description",
-    "date": "YYYY-MM-DD_HAS_TO_BE_IN_THE_FUTURE",
-    "startTime":"18:00",
-    "location": "Test Location",
-    "visibility": "public",
+    "title": "Dinner Party",
+    "description": "Annual gathering",
+    "date": "2025-06-01",
+    "startTime": "19:00",
+    "location": "123 Main St",
+    "visibility": "invite-only",
     "creatorId": "YOUR_USER_ID"
   }'
 ```
 
-### Troubleshooting
+**Get event details:**
+```bash
+curl http://localhost:3000/api/events/EVENT_ID \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
 
-- **Port conflicts**: Ensure ports 3000-3003 are free
-- **MongoDB connection**: Verify MongoDB is running (`mongod`)
-- **Environment variables**: Double-check `.env` files in each service
-- **Docker issues**: Run `docker system prune` if containers fail to start
-- **Integration test fails**: Check if all services are running with `docker ps`
+**Update an event:**
+```bash
+curl -X PUT http://localhost:3000/api/events/EVENT_ID \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
+    "title": "Updated Dinner Party",
+    "description": "Annual gathering (updated)"
+  }'
+```
+
+### Invitations
+
+**Send an invitation:**
+```bash
+curl -X POST http://localhost:3000/api/invitations \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
+    "eventId": "EVENT_ID",
+    "userId": "INVITEE_USER_ID",
+    "invitedBy": "YOUR_USER_ID"
+  }'
+```
+
+**Update invitation status (RSVP):**
+```bash
+curl -X PUT http://localhost:3000/api/invitations/INVITATION_ID/status \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
+    "userId": "INVITEE_USER_ID",
+    "status": "accepted",
+    "responseMessage": "Looking forward to it!"
+  }'
+```
+
+**Get all invitations:**
+```bash
+# For a specific event
+curl http://localhost:3000/api/invitations?eventId=EVENT_ID \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+
+# For a specific user
+curl http://localhost:3000/api/invitations?userId=USER_ID \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
 
 ---
 
-## Complete Request Flow Example
+## 🔄 API Workflow
 
-### **User Registration → Event Creation → Invitation Flow:**
+<details>
+<summary>Click to view complete request flow diagram</summary>
 
 ```mermaid
 sequenceDiagram
-    participant Client
-    participant API_Gateway
-    participant Identity_Service
-    participant Event_Service
-    participant Invitation_Service
+    participant U as User
+    participant G as API Gateway
+    participant I as Identity Service
+    participant E as Event Service
+    participant V as Invitation Service
 
-    %% User Registration (now just creates user)
-    Client->>API_Gateway: POST /api/auth/register
-    API_Gateway->>Identity_Service: /auth/register
-    Identity_Service-->>API_Gateway: 201 Created
-    API_Gateway-->>Client: Registration success message
+    Note over U,V: Registration & Login Flow
+    U->>G: POST /api/auth/register
+    G->>I: /auth/register
+    I-->>G: User created
+    G-->>U: 201 Created
     
-    %% User Login (needed to get JWT)
-    Client->>API_Gateway: POST /api/auth/login
-    API_Gateway->>Identity_Service: /auth/login
-    Identity_Service-->>API_Gateway: JWT Token & User ID
-    API_Gateway-->>Client: Token & User ID
+    U->>G: POST /api/auth/login
+    G->>I: /auth/login
+    I-->>G: JWT token
+    G-->>U: Token + User data
+
+    Note over U,V: Event Creation Flow
+    U->>G: POST /api/events (with JWT)
+    G->>E: /events
+    E-->>G: Event data
+    G-->>U: 201 Created
     
-    %% Event Creation (requires authentication)
-    Client->>API_Gateway: POST /api/events (with JWT)
-    Note right of Client: Include creatorId in payload
-    API_Gateway->>Event_Service: /events
-    Event_Service-->>API_Gateway: Event ID
-    API_Gateway-->>Client: 201 Created
-    
-    %% Send Invitation (requires authentication)
-    Client->>API_Gateway: POST /api/invitations (with JWT)
-    Note right of Client: Include eventId and userId of invitee
-    API_Gateway->>Invitation_Service: /invitations
-    Invitation_Service-->>API_Gateway: Invitation Data
-    API_Gateway-->>Client: 201 Created
-    
-    %% Update RSVP Status (requires authentication)
-    Client->>API_Gateway: PUT /api/invitations/:id/status (with JWT)
-    Note right of Client: Include status and userId of invitee
-    API_Gateway->>Invitation_Service: /invitations/:id/status
-    Invitation_Service-->>API_Gateway: Updated Invitation
-    API_Gateway-->>Client: 200 OK
+    Note over U,V: Invitation Flow
+    U->>G: POST /api/invitations (with JWT)
+    G->>V: /invitations
+    V-->>G: Invitation data
+    G-->>U: 201 Created
 ```
+</details>
 
 ---
 
-## Development Roadmap
+## ⚙️ Development
 
-For the MVP (Minimum Viable Product), we will focus on:
-
-1. **Core User Profile Management**
-   - Basic dietary profile creation (allergies, restrictions, preferences)
-   - Simple flexibility scale for each restriction
-   - Family/household member profiles
-
-2. **Essential Event Planning**
-   - Basic event creation with date, time, location
-   - Invitation system via email
-   - RSVP tracking with dietary information collection
-
-3. **Fundamental Dietary Analysis**
-   - Basic compatibility analysis for group meals
-   - Visual indicators for common restrictions
-   - Simple accommodation suggestions
-
-4. **Basic Recipe Management**
-   - Limited recipe database focused on common dietary needs
-   - Simple filtering by major restriction types
-   - Basic modification suggestions
-
-Future phases will implement the additional features outlined in the complete Software Requirements Specification.
-
----
-
-## Project Structure
+### Project Structure
 ```
-services/
-├── api-gateway/
-│   ├── src/
-│   │   ├── middleware/
-│   │   │   └── auth.js       # JWT verification
-│   │   └── index.js          # Proxy configuration
-│
-├── identity-service/
-│   ├── src/
-│   │   ├── api/
-│   │   │   ├── controllers/
-│   │   │   │   └── authController.js
-│   │   │   └── routes/
-│   │   │       └── auth.js
-│   │   └── domain/
-│   │       └── models/
-│   │           └── User.js
-│
-├── event-service/
-│   ├── src/
-│   │   ├── api/
-│   │   │   ├── controllers/
-│   │   │   │   └── eventController.js
-│   │   │   └── routes/
-│   │   │       └── events.js
-│   │   └── domain/
-│   │       └── models/
-│   │           └── Event.js
-│
-└── invitation-service/
-    ├── src/
-    │   ├── api/
-    │   │   ├── controllers/
-    │   │   │   └── invitationController.js
-    │   │   └── routes/
-    │   │       └── invitations.js
-    │   └── domain/
-    │       └── models/
-    │           └── Invitation.js
+olive-table/
+├── services/
+│   ├── api-gateway/          # Request routing
+│   ├── identity-service/     # User management
+│   ├── event-service/        # Event operations
+│   └── invitation-service/   # RSVP management
+├── docker-compose.yml        # Container orchestration
+└── test-integration.sh       # Automated tests
 ```
 
----
-
-## Testing
-
-### Integration Tests
-The project includes comprehensive integration tests that validate the complete workflow:
-
+### Running Tests
 ```bash
+# Make test script executable
+chmod +x test-integration.sh
+
+# Run integration tests
 ./test-integration.sh
 ```
 
-This automated test:
-1. Creates test users (creator and invitee)
-2. Authenticates both users
-3. Creates an event
-4. Sends an invitation
-5. Responds to the invitation
-6. Verifies all operations succeeded
-
-For detailed manual testing instructions, see `INTEGRATION_TESTS.md`.
-
----
-
-## Key Implementation Files
-
-| Service          | File                          | Key Functions/Middleware       |
-|------------------|-------------------------------|--------------------------------|
-| **API Gateway**  | `middleware/auth.js`          | `verifyToken()`                |
-|                  | `index.js`                    | Proxy configuration            |
-| **Identity**     | `authController.js`           | `register()`, `login()`        |
-| **Event**        | `eventController.js`          | `createEvent()`, `getEvents()` |
-| **Invitation**   | `invitationController.js`     | `createInvitation()`, `updateInvitationStatus()` |
-
-### Usage Examples:
-- **Authentication**: `verifyToken()` middleware checks JWT before routing to protected services
-- **Event Creation**: `createEvent()` handles validation and MongoDB persistence
-- **User Registration**: `register()` hashes passwords and generates JWTs
-
----
-
-## API Endpoints
-
-### Identity Service
-
-- `POST /api/auth/register` - User registration
-- `POST /api/auth/login` - User authentication
-
-### Event Service
-
-- `POST /api/events` - Create new event
-- `GET /api/events` - List all events
-- `GET /api/events/:id` - Get event details
-- `PUT /api/events/:id` - Update event
-- `DELETE /api/events/:id` - Delete event
-
-### Invitation Service
-
-- `POST /api/invitations` - Create invitation
-- `GET /api/invitations` - List invitations
-- `PUT /api/invitations/:id/status` - Update RSVP status
-
----
-
-## Debugging
-
-### View logs for each service:
-
-#### If running locally:
+### Local Development
 ```bash
-# API Gateway
-tail -f services/api-gateway/logs/app.log
+# Install dependencies
+cd services/identity-service && npm install
+cd ../event-service && npm install
+cd ../invitation-service && npm install
+cd ../api-gateway && npm install
 
-# Identity Service
-tail -f services/identity-service/logs/app.log
-
-# Event Service
-tail -f services/event-service/logs/app.log
-
-# Event Service
-tail -f services/invitation-service/logs/app.log
-```
-
-#### Or, if running Docker:
-```bash
-docker compose logs api-gateway -f # Logs for the API Gateway service
-docker compose logs identity-service -f # Logs for the identity service
-docker compose logs event-service -f # Logs for the event service
-docker compose logs invitation-service -f # Logs for the invitation service
+# Start individual services
+npm run dev  # in each service directory
 ```
 
 ---
 
-## Project Versioning
+## 🚨 Troubleshooting
 
-The project uses semantic versioning with tagged releases:
-- `v1.0.0-docker-baseline` - Complete working Docker setup (current baseline)
+### Common Issues
 
-Before any major migrations or architectural changes, create a new tag to preserve the working state.
+**Docker container won't start**
+```bash
+# Clean up Docker
+docker compose down --volumes
+docker system prune -f
+docker compose up --build
+```
+
+**Service connection errors**
+- Verify all services are running: `docker ps`
+- Check logs: `docker compose logs [service-name]`
+- Ensure ports 3000-3003, 27017 are available
+
+**Authentication errors**
+- Verify JWT_SECRET matches in `api-gateway` and `identity-service`
+- Check token expiration (24h default)
+
+### Logging
+```bash
+# View service logs
+docker compose logs -f api-gateway
+docker compose logs -f identity-service
+docker compose logs -f event-service
+docker compose logs -f invitation-service
+```
 
 ---
 
-## Error Handling
+## 📝 Documentation
 
-### - **401 Unauthorized**: Invalid/missing JWT'
-### - **404 Not Found**: Invalid route
-### - **500 Server Error**: Database/validation issues
-
----
-
-## Documentation
-
-### Core Documentation
-- [Software Requirements Specification](OLIVE_TABLE_SRS.md) - Complete feature requirements
-- [System Architecture](OLIVE_TABLE_ARCHITECTURE.md) - Technical architecture and design
-- [UI/UX Wireframes](OLIVE_TABLE_WIREFRAMES.md) - User interface designs
-- [Domain-Driven Design Concepts](OLIVE_TABLE_CONCEPTS.md) - DDD principles and patterns
-- [TypeScript Migration Guide](TYPESCRIPT_MIGRATION.md) - Migration from JavaScript
+- [Software Requirements Specification](OLIVE_TABLE_SRS.md)
+- [System Architecture Overview](OLIVE_TABLE_ARCHITECTURE.md)
+- [UI/UX Wireframes](OLIVE_TABLE_WIREFRAMES.md)
+- [Domain-Driven Design Guide](OLIVE_TABLE_CONCEPTS.md)
+- [TypeScript Migration Plans](TYPESCRIPT_MIGRATION.md)
+- [Contributing Guidelines](CONTRIBUTING.md)
 
 ---
 
-This README provides a high-level overview of the project setup, usage, and testing of the endpoints. Please make sure to replace the placeholders with your own credentials and IDs to ensure proper functionality.
+## 🚦 Roadmap
 
-Built with ❤️ by the Olive Table team
+### MVP (Current Focus)
+- [x] Core user authentication
+- [x] Basic event creation
+- [x] Simple invitation system
+- [ ] Dietary profile management
+- [ ] Group dietary compatibility analysis
+
+### Future Phases
+- Recipe database integration
+- Social features expansion
+- Mobile app development
+- AI-powered menu suggestions
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details on:
+- Code standards
+- Pull request process
+- Testing requirements
+- Documentation updates
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+## 🙏 Acknowledgments
+
+Built with ❤️ by the Olive Table team. Special thanks to all contributors and early adopters.
+
+---
+
+## 📞 Contact
+
+- Project Lead: [@eugenetedkim](https://github.com/eugenetedkim)
+- Issue Tracker: [GitHub Issues](https://github.com/eugenetedkim/olive-table/issues)
+- Email: [contact@olivetable.com](mailto:contact@olivetable.com)
+
+<div align="center">
+  <sub>©2025 Olive Table. All rights reserved.</sub>
+</div>
