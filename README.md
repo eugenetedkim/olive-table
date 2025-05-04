@@ -12,6 +12,59 @@ This repository contains a microservices architecture with:
 
 The Olive Table platform implements a microservices architecture to support KinMeal Social - a dietary-aware social gathering platform that helps users plan events while accounting for diverse dietary needs, preferences, and restrictions.
 
+## Architecture Philosophy
+
+### Domain-Driven Design (DDD)
+The Olive Table platform embraces DDD principles:
+
+1. **Bounded Contexts**: Each microservice represents a bounded context
+   - Identity (User authentication and profile management)
+   - Event (Event planning and management)
+   - Invitation (Social interactions and RSVPs)
+
+2. **Domain Models**: Rich domain objects with business logic
+   - User aggregate with dietary preferences and social connections
+   - Event aggregate with visibility and dietary requirements
+   - Invitation aggregate managing invitation lifecycle
+
+3. **DDD + MongoDB + TypeScript**:
+   - MongoDB documents naturally represent domain aggregates
+   - Type-safe domain models prevent bugs
+   - Mongoose schemas enforce domain invariants
+   - Business rules embedded in domain objects
+
+### Project Structure (DDD Layout)
+```
+services/
+├── identity-service/           # Identity Bounded Context
+│   ├── src/domain/            # Domain Layer
+│   │   └── models/            # Domain Aggregates
+│   │       └── User.js        # User Aggregate
+│   ├── src/api/               # Application Layer
+│   │   ├── controllers/       # Application Services
+│   │   └── routes/            # API Endpoints
+│   └── src/infrastructure/    # Infrastructure Layer
+│       └── db/                # Persistence
+│
+├── event-service/             # Event Bounded Context
+│   └── [Similar DDD structure]
+│
+└── invitation-service/        # Invitation Bounded Context
+    └── [Similar DDD structure]
+```
+
+### DDD Patterns Implemented
+- **Aggregates**: User, Event, Invitation as atomic units
+- **Domain Objects**: Rich models with business behavior
+- **Value Objects**: DietaryPreferences, EventVisibility
+- **Repository Pattern**: Database abstraction
+- **Domain Services**: Complex business logic coordination
+
+### Future Scalability
+- Adding social features leverages existing DDD structure
+- New bounded contexts can be added independently
+- Domain models evolve without breaking changes
+
 ### Key Features
 - User dietary profile management with restriction flexibility scales
 - Event planning and invitation system with RSVP tracking

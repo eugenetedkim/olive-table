@@ -48,6 +48,12 @@ const UserSchema = new mongoose.Schema({
   // List of dietary preference tags (.e.g. ["vegan", "gluten-free"])
   dietaryPreferences: [String],
 
+  // Array of friend user IDs for future social features
+  friends: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }],
+
   // Creation timestamp
   createdAt: {
     type: Date,
