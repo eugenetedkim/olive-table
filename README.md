@@ -1,16 +1,18 @@
-# Olive Table - API Gateway & Microservices
+# Olive Table: Dietary-Aware Social Gathering Platform
 
-This repository contains a microservices architecture with:
-- **API Gateway**: Reverse proxy with JWT authentication and path rewriting
-- **Identity Service**: User registration and authentication
-- **Event Service**: Event management (CRUD operations)
-- **Invitation Service**: Invitation and RSVP management
+**Olive Table** is a comprehensive platform for dietary profile management and social gathering coordination. Built with a microservices architecture and TypeScript, it simplifies planning meals and events where diverse dietary needs must be accommodated.
+
+## The Story Behind Olive Table
+
+Just as an olive tree symbolizes peace, wisdom, and abundance, Olive Table fosters meaningful connections around food. We believe that breaking bread together should be inclusive, not exclusive—and dietary restrictions shouldn't exclude anyone from the table.
+
+"A table set for celebration becomes a humble altar when shared among friends and strangers alike."
 
 ---
 
 ## Project Summary
 
-The Olive Table platform implements a microservices architecture to support KinMeal Social - a dietary-aware social gathering platform that helps users plan events while accounting for diverse dietary needs, preferences, and restrictions.
+The Olive Table platform implements a microservices architecture to support a dietary-aware social gathering platform that helps users plan events while accounting for diverse dietary needs, preferences, and restrictions.
 
 ## Architecture Philosophy
 
@@ -579,4 +581,17 @@ Before any major migrations or architectural changes, create a new tag to preser
 
 ---
 
+## Documentation
+
+### Core Documentation
+- [Software Requirements Specification](OLIVE_TABLE_SRS.md) - Complete feature requirements
+- [System Architecture](OLIVE_TABLE_ARCHITECTURE.md) - Technical architecture and design
+- [UI/UX Wireframes](OLIVE_TABLE_WIREFRAMES.md) - User interface designs
+- [Domain-Driven Design Concepts](OLIVE_TABLE_CONCEPTS.md) - DDD principles and patterns
+- [TypeScript Migration Guide](TYPESCRIPT_MIGRATION.md) - Migration from JavaScript
+
+---
+
 This README provides a high-level overview of the project setup, usage, and testing of the endpoints. Please make sure to replace the placeholders with your own credentials and IDs to ensure proper functionality.
+
+Built with ❤️ by the Olive Table team
