@@ -96,7 +96,7 @@ Create `tsconfig.json`:
 }
 ```
 
-## What This Config Does:**
+#### What This Config Does:
 - **`target: "es2020"`**: Compiles TypeScript to ES2020 JavaScript
   - Modern features supported (optional chaining, nullish coalescing)
   - Compatible with Node.js 16+
@@ -162,7 +162,7 @@ Create `tsconfig.json`:
   - Links compiled JS back to TS for debugging
   - Shows TS code in error stack traces
 
-## Project Configuration:
+#### Project Configuration:
 
 - **`include: ["src/**/*.ts"]`**: Files to compile
   - All TypeScript files in src directory
