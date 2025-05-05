@@ -57,7 +57,7 @@
 **/yarn-error.log*    # Ignores yarn error logs which may contain sensitive paths
 **/.npm               # Ignores npm's cache directory
 **/.yarn              # Ignores yarn's cache directory
-**/package-lock.json  # Optional: some teams commit this, others don't (for consistency)
+# **/package-lock.json  # Optional: some teams commit this, others don't (for consistency)
 **/yarn.lock          * Optional: some teams commit this, others don't (for consistency)
 
 # Build outputs - Generated during build process, don't need to be versioned
