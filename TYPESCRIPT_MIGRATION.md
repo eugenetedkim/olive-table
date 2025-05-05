@@ -96,34 +96,81 @@ Create `tsconfig.json`:
 }
 ```
 
-**What This Config Does:**
+## What This Config Does:**
 - **`target: "es2020"`**: Compiles TypeScript to ES2020 JavaScript
   - Modern features supported (optional chaining, nullish coalescing)
   - Compatible with Node.js 16+
+
 - **`module: "commonjs"`**: Uses Node.js module system
   - Required for Node.js (not browser)
   - Enables `require()` and `module.exports`
+
+- **`lib: ["es2020"]`**: Specifies JavaScript API definitions
+  - Includes type definitions for all ES2020 features
+  - Enables access to built-in objects and methods like Promise, Map, BigInt
+  - Provides intellisense for modern JavaScript APIs
+
 - **`outDir: "./dist"`**: Where compiled files go
   - Creates a `dist` folder with JavaScript files
   - Keeps source and compiled code separated
+
 - **`rootDir: "./src"`**: Where source files are located
   - TypeScript looks here for `.ts` files
   - Maintains folder structure in `dist`
+
 - **`strict: true`**: Enables all strict checking
   - Prevents common errors
   - Requires explicit typing
+
 - **`esModuleInterop: true`**: Allows default imports
   - Import Express as `import express from 'express'`
   - Instead of `import * as express from 'express'`
+
+- **`skipLibCheck: true`**: Skips type checking of declaration files
+  - Speeds up compilation time significantly
+  - Ignores errors in third-party library definitions
+
+- **`forceConsistentCasingInFileNames: true`**: Enforces case sensitivity
+  - Prevents import errors between Windows and Linux/Mac
+  - Ensures consistent file naming across team members
+
 - **`noImplicitAny: true`**: Forbids `any` type
   - Must explicitly define types
   - Increases code safety
+
+- **`noUnusedLocals: true`**: Flags unused variables
+  - Keeps code clean and maintainable
+  - Prevents accidental bugs from unused declarations
+
+- **`noUnusedParameters: true`**: Flags unused function parameters
+  - Identifies potentially unnecessary arguments
+  - Improves code clarity and function signatures
+
+- **`noImplicitReturns: true`**: Requires explicit returns
+  - All code paths must return a value
+  - Prevents unexpected undefined returns
+
+- **`moduleResolution: "node"`**: Uses Node.js module lookup
+  - Finds modules in `node_modules`
+  - Uses Node.js resolution algorithm
+
+- **`resolveJsonModule: true`**: Enables JSON imports
+  - Import JSON files with type checking
+  - Access JSON structure with intellisense
+
 - **`sourceMap: true`**: Creates debugging maps
   - Links compiled JS back to TS for debugging
   - Shows TS code in error stack traces
-- **`moduleResolution: "node"`**: Uses Node.js module lookup
-  - Finds modules in `node_modules`
-  - Required for Node.js projects
+
+## Project Configuration:
+
+- **`include: ["src/**/*.ts"]`**: Files to compile
+  - All TypeScript files in src directory
+  - Includes subdirectories recursively
+
+- **`exclude: ["node_modules", "dist"]`**: Excluded directories
+  - Avoids processing third-party code
+  - Prevents recompiling already compiled code
 
 ### 1.2 Update package.json Scripts
 
