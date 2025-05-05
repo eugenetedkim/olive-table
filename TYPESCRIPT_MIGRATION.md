@@ -185,6 +185,35 @@ Create `tsconfig.json`:
 }
 ```
 
+#### What These Scripts Do:
+
+- **`build: "tsc"`**: Compiles TypeScript to JavaScript
+  - Runs the TypeScript compiler
+  - Creates JavaScript files in the `dist` directory according to tsconfig.json
+  - Must be run before deployment or production start
+  - **Run with:** `npm run build`
+
+- **`start: "node dist/index.js"`**: Runs the compiled application
+  - Executes the compiled JavaScript (not TypeScript)
+  - Used in production environments
+  - Requires running `build` script first
+  - **Run with:** `npm start`
+
+- **`dev: "nodemon --exec ts-node src/index.ts"`**: Development mode
+  - Watches for file changes with nodemon
+  - Compiles and runs TypeScript directly with ts-node
+  - Auto-restarts server when files change
+  - No need to manually compile during development
+  - **Run with:** `npm run dev`
+
+- **`lint: "eslint . --ext .ts"`**: Code quality checks
+  - Runs ESLint on all TypeScript files
+  - Enforces coding standards
+  - Identifies potential errors and style issues
+  - Can be extended with `--fix` flag to auto-fix some issues
+  - **Run with:** `npm run lint`
+  - **Run with auto-fix:** `npm run lint -- --fix`
+
 ### 1.3 Install TypeScript Dependencies
 
 ```bash
