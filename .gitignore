@@ -1,119 +1,52 @@
-# GITIGNORE PATTERN EXPLANATION
-# ============================
-# The **/ pattern used throughout this file is a globstar pattern that means:
-# "match in all directories and subdirectories at any depth"
-#
-# For example:
-# **/node_modules/ will match:
-#  - /node_modules/ at the root level
-#  - /services/identity-service/node_modules/
-#  - /services/event-service/node_modules/
-#  - Any node_modules directory, no matter how deeply nested
-#
-# This is particularly useful for our microservices architecture
-# where similar files (like .env files or node_modules) exist in multiple service directories.
-# Using **/ keeps our .gitignore file concise while maintaining consistent rules across all services.
+# Dependencies
+**/node_modules/
+**/npm-debug.log*
+**/yarn-debug.log*
+**/yarn-error.log*
+# package-lock.json is intentionally NOT ignored to ensure dependency consistency
 
-# ADDITIONAL PATTERN EXPLANATION
-# =============================
-# The trailing asterisk (*) at the end of patterns like **/npm-debug.log* means:
-# "match any characters after this part of the filename"
-#
-# For example:
-# **/npm-debug.log* will match:
-#  - npm-debug.log
-#  - npm-debug.log.1234
-#  - npm-debug.log.old
-#  - npm-debug.log.2023-04-16
-#
-# This is useful for log files that might have timestamps or incremental numbers appended,
-# or any file that might have varying extensions or suffixes.
-#
-# Different pattern examples:
-# **/*.log      → Matches any file with .log extension in any directory
-# **/npm*.log   → Matches npm-prefix log files (npm.log, npm-debug.log, etc.)
-# **/npm-debug.log* → Matches npm-debug.log files with any suffix
+# Build outputs
+**/dist/
+**/build/
+**/out/
+**/*.tsbuildinfo
 
-# Node.js logs with any possible suffix
-**/npm-debug.log*     # Catches npm-debug.log, npm-debug.log.1234, etc.
-**/yarn-debug.log*    # Catches yarn-debug.log with any suffix
-**/yarn-error.log*    # Catches yarn-error.log with any suffix
+# Environment variables
+**/.env
+**/.env.local
+**/.env.development.local
+**/.env.test.local
+**/.env.production.local
+!**/.env.example
 
-# Environment files
-**/.env               # Ignores all .env files in any directory
-**/.env.local         # Ignores local override environment files
-**/.env.*.local       # Ignores environment files with patterns like .env.development.local
+# OS files
+**/.DS_Store
+**/.DS_Store?
+**/.AppleDouble
+**/.LSOverride
+**/Thumbs.db
+**/ehthumbs.db
 
-# Keep the example environment files in version control as templates
-# The exclamation mark negates the previous ignore pattern for .env files
-# This allows developers to see what enironment variables are needed
-!**/.env.example      # Explicitly keeps .env.example files in version control
+# IDE settings
+.vscode/
+.idea/
+**/*.swp
+**/*.swo
+**/.project
+**/.classpath
+**/.settings/
 
-# Node.js dependencies and logs
-# node_modules are large, can be regenerated, and may contain platform-specific code
-**/node_modules/      # Ignores all node_modules directories (largest part of Node.js projects)
-**/npm-debug.log*     # Ignores npm debug logs which contain local execution information
-**/yarn-debug.log*    # Ignores yarn debug logs
-**/yarn-error.log*    # Ignores yarn error logs which may contain sensitive paths
-**/.npm               # Ignores npm's cache directory
-**/.yarn              # Ignores yarn's cache directory
-# **/package-lock.json  # Optional: some teams commit this, others don't (for consistency)
-**/yarn.lock          * Optional: some teams commit this, others don't (for consistency)
+# Logs
+**/logs/
+**/*.log
 
-# Build outputs - Generated during build process, don't need to be versioned
-# These are created by the build process and should be generated on the deployment server
-**/dist/             # Common output directory for compiled code
-**/build/            # Alternative build output directory
-**/out/              # Another common output directory
-**/.output/          # Output directory used by some frameworks
+# Test coverage
+**/coverage/
+**/.nyc_output/
 
-# TypeScript compilation metadata
-# Contains information about the build process, different per machine
-**/*.tsbuildinfo     # TypeScript incremental compilation files
+# Temporary files
+**/tmp/
+**/temp/
 
-# Logs - Contains runtime information, potentially sensitive data
-**/logs/             # Directory containing log files
-**/*.log             # Any log files with .log extension
-
-# Testing artifacts - Test coverage reports and temporary test data
-# Generated during test runs, not needed in version control
-**/coverage/         # Test coverage reports directory
-**/.nyc_output/      # NYC (Istanbul) code coverage output
-
-# IDE & Editor files - Specific to each developer's environment
-# These contain user-specific settings and should not be shared
-.idea/               # JetBrains IDEs (IntelliJ, WebStorm, etc.)
-.vscode/             # Visual Studio Code settings
-*.swp                # Vim swap files
-*.swo                # Another Vim swap file format
-**/.DS_Store         # macOS folder configuration files
-**/.project          # Eclipse project files
-**/.classpath        # Eclipse classpath configuration
-**/.settings/        # Eclipse settings directory
-
-# Docker temporary files
-# Configuration overrides that may contain environment-specific settings
-**/.dockerignore     # Docker's own ignore file
-**/docker-compose.override.yml  # Local Docker Compose overrides
-
-# Temporary files created during development
-# These are scratch files and caches that shouldn't be committed
-**/tmp/              # Common temporary directory
-**/temp/             # Alternative temporary directory
-
-# OS generated files - created by the operating system
-# These have no place in a code repository
-**/.DS_Store         # macOS directory metadata
-**/.AppleDouble      # macOS resource forks
-**/.LSOverride       # macOS finder metadata
-**/Thumbs.db         # Windows image file cache
-**/ehthumbs.db       # Windows Explorer thumbnail cache
-
-# Debug files - generated during debugging sessions
-# Contains development-specific information not needed in production
-**/.debug            # Debug directories
-**/*.debug           # Debug files with .debug extension
-
-# Local database data - contains actual data, should not be committed
-# Database contents should be managed through migrations, not direct commits
-**/data/db/          # Common location for MongoDB data files in local development
+# Docker files
+**/docker-compose.override.yml
