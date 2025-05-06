@@ -729,25 +729,37 @@ user.doesntExist();     // ❌ TypeScript: Property 'doesntExist' does not exist
 
 After successfully migrating the User model to TypeScript, follow these steps to complete the migration of related components:
 
-#### 1. Update Import References
+#### 1. Identify Files Referencing User Model
 
-First, identify and update any files that import the User model:
+First, identify all files that reference the User model:
 
 ```bash
-# Find all files referencing the User model
-grep -r "require.*User" services/
+# Find all files referencing User
+grep -r "User" services/ --include="*.js" --exclude-dir="node_modules"
 ```
 
-For each file that uses the User model, update the import syntax:
+This helps you locate:
+- Controllers that import the User model (e.g., `userController.js`, `authController.js`)
+- Routes that use User-related controllers (`users.js`)
+- Any other files that might depend on the User model
+
+#### 2. Update Import References
+
+For each file that imports the User model, update the import syntax:
+
 ```javascript
 // Old (CommonJS)
 const User = require('../../domain/models/User');
 
 // New (ES Modules)
-import User from '../../domain/models/User';
+import User, { IUser } from '../../domain/models/User';
 ```
 
-#### 2. Migrate Dependent Files
+The key files to update first in your project are:
+- `services/identity-service/src/api/controllers/userController.js`
+- `services/identity-service/src/api/controllers/authController.js`
+
+#### 3. Migrate Dependent Files
 
 After updating imports, migrate files that directly interact with the User model:
 
@@ -761,14 +773,23 @@ For each file:
 - Add type annotations for variables
 - Convert to ES module syntax
 
-#### 3. Test Your Changes
+Example for creating TypeScript versions:
+
+```bash
+# Create TypeScript versions alongside JavaScript files
+touch services/identity-service/src/api/controllers/userController.ts
+touch services/identity-service/src/api/controllers/authController.ts
+touch services/identity-service/src/api/routes/users.ts
+```
+
+#### 4. Test Your Changes
 
 Before removing any JavaScript files:
 - Run your test suite (if you have one)
 - Manually test the authentication flow
 - Verify that user creation, updating, and authentication still work
 
-#### 4. Remove JavaScript Version
+#### 5. Remove JavaScript Version
 
 Once you've confirmed everything works:
 ```bash
@@ -776,20 +797,20 @@ git rm services/identity-service/src/domain/models/User.js
 git commit -m "chore(identity): Remove JavaScript User model after TypeScript migration"
 ```
 
-#### 5. Document Your Progress
+#### 6. Document Your Progress
 
 Update your migration tracking document to mark this model as complete.
 
-#### 6. Choose Your Next Model
+#### 7. Choose Your Next Models
 
 Look for related models that interact with the User model, such as:
 - Profile model
 - Authentication-related models
-- Any model referenced by the User model
+- Any models referenced by the User model
 
 These related models are good candidates for your next migration targets since you already have the User model as a reference.
 
-#### 7. Configure TypeScript for the Service
+#### 8. Configure TypeScript for the Service
 
 If you haven't already, ensure you have proper TypeScript configuration in your identity service:
 - Verify tsconfig.json settings
