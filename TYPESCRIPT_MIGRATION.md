@@ -251,66 +251,155 @@ npm install --save-dev typescript @types/node @types/express @types/mongoose @ty
 
 **Before (JavaScript):**
 ```javascript
-// 📄 src/domain/models/User.js
-const mongoose = require('mongoose');                      // [1]
-const bcrypt = require('bcrypt');                         // [2]
+// 📄 services/identity-service/src/domain/models/User.js
+const mongoose = require('mongoose');                      // [1] Package import
+const bcrypt = require('bcryptjs');                        // [2] Package import
 
-const UserSchema = new mongoose.Schema({                  // [3]
-  email: { type: String, required: true },                
-  password: { type: String, required: true },
-  // ... other fields
-});                                                      // [4]
+const UserSchema = new mongoose.Schema({                   // [3] Schema definition
+  email: {                                                 // [4] Email field
+    type: String,
+    required: true,
+    unique: true,
+    trim: true,
+    lowercase: true,
+  },
+  password: {                                              // [5] Password field
+    type: String,
+    required: true,
+  },
+  firstName: {                                             // [6] First name field
+    type: String,
+    required: true,
+    trim: true,
+  },
+  lastName: {                                              // [7] Last name field
+    type: String,
+    required: true,
+    trim: true,
+  },
+  profilePicture: {                                        // [8] Profile picture field
+    type: String,
+  },
+  dietaryPreferences: [String],                            // [9] Dietary preferences field
+  friends: [{                                              // [10] Friends field
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }],
+  createdAt: {                                             // [11] Created date field
+    type: Date,
+    default: Date.now,
+  },
+  updatedAt: {                                             // [12] Updated date field
+    type: Date,
+    default: Date.now,
+  },
+});                                                        // [13] End schema definition
 
-module.exports = mongoose.model('User', UserSchema);     // [5]
+UserSchema.pre('save', function(next) {                    // [14] Pre-save hook
+  this.updatedAt = Date.now();
+
+  if (!this.isModified('password')) {                      // [15] Skip hashing if unchanged
+    return next();
+  }
+
+  bcrypt.genSalt(10, (err, salt) => {                      // [16] Generate salt and hash
+    if (err) return next(err);
+
+    bcrypt.hash(this.password, salt, (err, hash) => {
+      if (err) return next(err);
+      
+      this.password = hash;
+      next();
+    });
+  });
+});
+
+UserSchema.methods.matchPassword = async function(enteredPassword) {  // [17] Password comparison method
+  return await bcrypt.compare(enteredPassword, this.password);
+};
+
+module.exports = mongoose.model('User', UserSchema);      // [18] Export model
 ```
 
 **After (TypeScript):**
 ```typescript
-// 📄 src/domain/models/User.ts
-import mongoose, { Document, Schema } from 'mongoose';    // [1]
-import bcrypt from 'bcrypt';                             // [2]
+// 📄 services/identity-service/src/domain/models/User.ts
+import mongoose, { Document, Schema } from 'mongoose';    // [1] Package import (ES6)
+import bcryptjs from 'bcryptjs';                          // [2] Package import (ES6)
 
-export interface IUser extends Document {                 // [3]
-  email: string;                                         // [4]
-  password: string;
-  firstName?: string;                                    // [5]
-  lastName?: string;
-  dietaryPreferences?: string[];                         // [6]
-  createdAt: Date;                                       // [7]
-  updatedAt: Date;
-  comparePassword(candidatePassword: string): Promise<boolean>;  // [8]
+// TypeScript addition: Interface definition
+export interface IUser extends Document {                 // [TS-1] Interface declaration
+  email: string;                                          // [4] Email field type
+  password: string;                                       // [5] Password field type
+  firstName: string;                                      // [6] First name field type
+  lastName: string;                                       // [7] Last name field type
+  profilePicture?: string;                                // [8] Profile picture field type
+  dietaryPreferences?: string[];                          // [9] Dietary preferences field type
+  friends?: mongoose.Types.ObjectId[];                    // [10] Friends field type
+  createdAt: Date;                                        // [11] Created date field type
+  updatedAt: Date;                                        // [12] Updated date field type
+  matchPassword(enteredPassword: string): Promise<boolean>; // [TS-2] Method signature
 }
 
-const UserSchema = new Schema<IUser>({                    // [9]
-  email: {
+const UserSchema = new Schema<IUser>({                    // [3] Schema definition with type
+  email: {                                                // [4] Email field
     type: String,
     required: true,
     unique: true,
     trim: true,
     lowercase: true
   },
-  // ... other fields
-}, {
-  timestamps: true                                        // [10]
-});
+  password: {                                             // [5] Password field
+    type: String,
+    required: true,
+  },
+  firstName: {                                            // [6] First name field
+    type: String,
+    required: true,
+    trim: true,
+  },
+  lastName: {                                             // [7] Last name field
+    type: String,
+    required: true,
+    trim: true,
+  },
+  profilePicture: {                                       // [8] Profile picture field
+    type: String,
+  },
+  dietaryPreferences: [String],                           // [9] Dietary preferences field
+  friends: [{                                             // [10] Friends field
+    type: Schema.Types.ObjectId,
+    ref: 'User'
+  }],
+  createdAt: {                                            // [11] Created date field
+    type: Date,
+    default: Date.now,
+  },
+  updatedAt: {                                            // [12] Updated date field
+    type: Date,
+    default: Date.now,
+  }
+});                                                       // [13] End schema definition
 
-UserSchema.pre<IUser>('save', async function(next) {     // [11]
-  if (!this.isModified('password')) return next();       // [12]
+UserSchema.pre<IUser>('save', async function(next) {      // [14] Pre-save hook
+  this.updatedAt = new Date();
   
-  try {
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
+  if (!this.isModified('password')) return next();        // [15] Skip hashing if unchanged
+  
+  try {                                                   // [16] Generate salt and hash (async)
+    const salt = await bcryptjs.genSalt(10);              
+    this.password = await bcryptjs.hash(this.password, salt);
     next();
   } catch (error) {
-    next(error as Error);                                // [13]
+    next(error as Error);                                 // [TS-3] Type assertion
   }
 });
 
-UserSchema.methods.comparePassword = async function(candidatePassword: string): Promise<boolean> {  // [14]
-  return bcrypt.compare(candidatePassword, this.password);
+UserSchema.methods.matchPassword = async function(enteredPassword: string): Promise<boolean> {  // [17] Password comparison method
+  return await bcryptjs.compare(enteredPassword, this.password);
 };
 
-export default mongoose.model<IUser>('User', UserSchema); // [15]
+export default mongoose.model<IUser>('User', UserSchema); // [18] Export model
 ```
 
 **What Changed & TypeScript Syntax Explained:**
@@ -319,109 +408,65 @@ export default mongoose.model<IUser>('User', UserSchema); // [15]
 - JavaScript: `const mongoose = require('mongoose');`
 - TypeScript: `import mongoose, { Document, Schema } from 'mongoose';`
 - **What changed**: ES6 import syntax instead of CommonJS require
-- **What it means**: 
-  - `import mongoose`: Default import (like require)
-  - `{ Document, Schema }`: Named imports from the same package
-  - TypeScript can check these imports exist
+- **What it means**: TypeScript uses modern ES modules and can import specific types
 
-**[2] Default Import:**
-- JavaScript: `const bcrypt = require('bcrypt');`
-- TypeScript: `import bcrypt from 'bcrypt';`
-- **What it means**: Imports the main export from bcrypt package
+**[2] Package Import:**
+- JavaScript: `const bcrypt = require('bcryptjs');`
+- TypeScript: `import bcryptjs from 'bcryptjs';`
+- **What changed**: CommonJS to ES6 module syntax
 
-**[3] Interface Declaration:**
+**[TS-1] Interface Declaration:**
 - New in TypeScript: `export interface IUser extends Document`
 - **What it means**:
-  - Creates a contract: "A User must have these properties"
-  - `extends Document`: Inherits MongoDB document methods
-  - `export`: Makes interface available to other files
-  - Like a "type blueprint" for User objects
+  - Defines the shape of your User document as a TypeScript type
+  - `extends Document`: Inherits MongoDB document properties
+  - Creates a contract for what fields and methods a User must have
 
-**[4] Property Types:**
-- JavaScript: No type information
-- TypeScript: `email: string;`
-- **What it means**:
-  - Explicitly declares email must be a string
-  - Prevents accidental assignment of numbers/objects
-  - IDE gives autocomplete & error checking
+**[3-13] Schema Definition:**
+- JavaScript: Regular Mongoose schema
+- TypeScript: Schema with type parameter `Schema<IUser>`
+- **What changed**: The schema now references the interface type
+- **What it means**: TypeScript ensures your schema matches the interface
 
-**[5] Optional Properties:**
-- New: `firstName?: string;`
-- **What the `?` means**:
-  - Property can be `undefined` (missing)
-  - Makes it optional when creating User
-  - Prevents "property not found" errors
+**[4-12] Field Properties:**
+- JavaScript: Schema field definitions
+- TypeScript: 
+  1. Interface property types (string, Date, etc.)
+  2. Same schema field definitions as in JavaScript
+- **What changed**: Added type definitions in the interface
 
-**[6] Array Types:**
-- New: `dietaryPreferences?: string[];`
-- **What it means**:
-  - Array of strings only
-  - Can't mix types: `['vegan', 42]` ✘ TypeScript error
-  - Optional: `string[] | undefined`
+**[8-10] Special Types:**
+- JavaScript: Regular field definitions
+- TypeScript:
+  - `profilePicture?: string`: Optional string (the `?` means optional)
+  - `dietaryPreferences?: string[]`: Optional array of strings (the `[]` means array)
+  - `friends?: mongoose.Types.ObjectId[]`: Optional array of MongoDB IDs
+- **What it means**: More precise type definitions
 
-**[7] Date Type:**
-- JavaScript: Just defines field
-- TypeScript: `createdAt: Date;`
-- **What it means**:
-  - Must be JavaScript Date object
-  - Can't be string or timestamp
+**[14-16] Pre-save Hook:**
+- JavaScript: Callback-based approach
+- TypeScript: 
+  - Uses `pre<IUser>` to type the document
+  - Uses modern async/await instead of callbacks
+- **What changed**: More modern and type-safe approach
 
-**[8] Method Signature:**
-- New: `comparePassword(candidatePassword: string): Promise<boolean>;`
-- **What it means**:
-  - Method takes string parameter
-  - Returns a Promise that resolves to boolean
-  - TypeScript checks you call it correctly
-  - Example: `await user.comparePassword('password123')`
+**[TS-3] Error Handling:**
+- New in TypeScript: `next(error as Error);`
+- **What it means**: Explicitly tells TypeScript that the error is an Error object
 
-**[9] Schema Type Parameter:**
-- JavaScript: `new mongoose.Schema({})`
-- TypeScript: `new Schema<IUser>({})`
-- **What `<IUser>` means**:
-  - Generic type parameter
-  - "This schema follows the IUser interface"
-  - TypeScript checks schema matches interface
+**[17] Method Implementation:**
+- JavaScript: Method without parameter types
+- TypeScript: Method with parameter and return types
+- **What changed**: Added `(enteredPassword: string): Promise<boolean>`
+- **What it means**: Type-safe method calls
 
-**[10] Timestamps:**
-- Same in both: `timestamps: true`
-- **What it does**:
-  - Automatically adds `createdAt` and `updatedAt` fields
-  - Updates `updatedAt` on save
-
-**[11] Pre-hook with Type:**
-- TypeScript: `.pre<IUser>('save', async function(next) {`
-- **What `<IUser>` means**:
-  - `this` refers to IUser document
-  - TypeScript knows available properties
-  - Can access `this.password` safely
-
-**[12] Type Guards:**
-- Same logic, but TypeScript checks `this.isModified` exists
-- **What it prevents**:
-  - Calling non-existent methods
-  - Compile-time safety
-
-**[13] Error Type Casting:**
-- New: `next(error as Error);`
-- **What `as Error` means**:
-  - Explicitly tells TypeScript "this is an Error object"
-  - Needed because `catch` block error is `unknown` type
-  - Alternative: `error instanceof Error` check
-
-**[14] Method Implementation:**
-- TypeScript: Explicit parameter and return types
-- **What it adds**:
-  - `candidatePassword: string`: Must pass string
-  - `: Promise<boolean>`: Must return Promise<boolean>
-  - Compiler checks you return correct type
-
-**[15] Model Export:**
+**[18] Model Export:**
 - JavaScript: `module.exports = mongoose.model('User', UserSchema);`
 - TypeScript: `export default mongoose.model<IUser>('User', UserSchema);`
 - **What changed**:
-  - ES6 export instead of module.exports
-  - `<IUser>`: Tells TypeScript the model type
-  - Enables type checking when using the model
+  - ES6 export syntax
+  - Added `<IUser>` type parameter
+- **What it means**: Type-safe model usage
 
 **Real-World Benefits:**
 ```typescript
