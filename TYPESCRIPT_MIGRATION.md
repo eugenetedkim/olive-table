@@ -1219,6 +1219,46 @@ curl http://localhost:3001/health
 - **Type conflicts**: Ensure you've installed all `@types/` packages
 - **Docker issues**: Make sure `dist/` folder exists after build
 
+### 1.11 Handling File Transitions
+
+When migrating a file from JavaScript to TypeScript, follow this two-stage approach:
+
+**Stage 1: Implementation**
+1. Create the new TypeScript file alongside the existing JavaScript file
+   ```bash
+   # Example: User model
+   touch services/identity-service/src/domain/models/User.ts
+   ```
+2. Implement the TypeScript version while keeping the JavaScript version untouched
+3. Test the TypeScript implementation thoroughly
+
+**Stage 2: Replacement**
+1. Update all import statements in other files to reference the TypeScript file
+   ```javascript
+   // Before
+   const User = require('../../domain/models/User');
+   
+   // After
+   import User from '../../domain/models/User';
+   ```
+2. Remove the JavaScript file once all references are updated
+   ```bash
+   git rm services/identity-service/src/domain/models/User.js
+   ```
+
+**Git Workflow:**
+```bash
+# First commit the new TypeScript file
+git add services/identity-service/src/domain/models/User.ts
+git commit -m "feat(identity): Migrate User model to TypeScript"
+
+# After testing and confirming it works, remove the JS file
+git rm services/identity-service/src/domain/models/User.js
+git commit -m "chore(identity): Remove JavaScript User model after TypeScript migration"
+```
+
+This two-step approach gives you a clear migration path and provides a safety net during implementation. If any issues arise with the TypeScript version, you still have the working JavaScript implementation as a reference or fallback.
+
 ## Step 2: Event Service Migration
 
 *📚 Learning Note: Follow the same pattern as Identity Service with different model*
