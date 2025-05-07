@@ -782,9 +782,50 @@ This two-phase approach (updating imports first, then creating TypeScript files)
 
 While it does require an extra step, this methodical approach significantly reduces the risk of introducing breaking changes and makes the migration process more manageable.
 
-#### 3. Migrate Dependent Files
+#### 3. Test Your Changes After Import Updates
 
-After updating imports, migrate files that directly interact with the User model:
+Before migrating the actual JavaScript files to TypeScript:
+- Test the entire user flow to ensure your import updates work correctly:
+  - Register a user (test User model and auth controller)
+  - Log in (test authentication and JWT token generation)
+  - Create an event (test Event model and protected routes)
+  - Send an invitation (test Invitation model and cross-service communication)
+  - Respond to an invitation (test update operations)
+
+This end-to-end testing approach validates that:
+- TypeScript models correctly integrate with JavaScript files
+- Authentication flows properly across services
+- Cross-service communication functions as expected
+- API routes are properly configured
+- Both read and write database operations work
+
+Example curl commands for testing:
+```bash
+# Register a user
+curl -X POST http://localhost:3000/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@example.com","password":"password123","firstName":"Test","lastName":"User"}'
+
+# Login
+curl -X POST http://localhost:3000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@example.com","password":"password123"}'
+
+# Use the token from login response for subsequent requests
+# TOKEN=<token from login response>
+
+# Create an event
+curl -X POST http://localhost:3000/api/events \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Test Event","description":"Testing","date":"2023-12-01","startTime":"18:00","endTime":"20:00","location":"Test Location"}'
+```
+
+If any issues arise during testing, the two-phase approach makes it easier to identify and fix problems without affecting the entire codebase.
+
+#### 4. Migrate Dependent Files
+
+After updating imports and testing, migrate files that directly interact with the User model:
 
 1. **User-related controllers** - These will need updating to use TypeScript interfaces and types
 2. **Authentication middleware** - Often heavily dependent on the User model
@@ -1064,13 +1105,6 @@ When migrating controller files:
      const { userId } = req.user;
    }
    ```
-
-#### 4. Test Your Changes
-
-Before removing any JavaScript files:
-- Run your test suite (if you have one)
-- Manually test the authentication flow
-- Verify that user creation, updating, and authentication still work
 
 #### 5. Remove JavaScript Version
 
