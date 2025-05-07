@@ -3,7 +3,12 @@
 // Import the User model from domain layer
 // DDD principle: controllers depend on domain models, not vice versa
 // This maintains the correct dependency direction (inward toward domain core)
-const User = require('../../domain/models/User');
+
+/** Old (CommonJS) */
+// const User = require('../../domain/models/User');
+
+/** New (ES Modules) */
+import User, { IUser } from '../../domain/models/User';
 
 // Controller method to retrieve a specific user by ID
 // This exposes a domain entity through the API boundary
