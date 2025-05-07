@@ -782,6 +782,266 @@ touch services/identity-service/src/api/controllers/authController.ts
 touch services/identity-service/src/api/routes/users.ts
 ```
 
+### Controller Migration Example:
+
+**Before (JavaScript):**
+```javascript
+// 📄 src/api/controllers/authController.js
+const jwt = require('jsonwebtoken');                              // [1]
+const User = require('../../domain/models/User');                 // [2]
+
+exports.login = async (req, res) => {                            // [3]
+  try {
+    const { email, password } = req.body;                        // [4]
+    
+    const user = await User.findOne({ email });                  // [5]
+    if (!user) {
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+    
+    const isMatch = await user.matchPassword(password);          // [6]
+    if (!isMatch) {
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+    
+    const token = jwt.sign(                                      // [7]
+      { userId: user._id, email: user.email }, 
+      process.env.JWT_SECRET,
+      { expiresIn: '1h' }
+    );
+    
+    res.json({                                                   // [8]
+      token,
+      user: {
+        id: user._id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName
+      }
+    });
+  } catch (err) {
+    console.error('Login error:', err);                          // [9]
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+```
+
+**After (TypeScript):**
+```typescript
+// 📄 src/api/controllers/authController.ts
+import { Request, Response } from 'express';                              // [1]
+import jwt from 'jsonwebtoken';                                           // [2]
+import User, { IUser } from '../../domain/models/User';                  // [3]
+
+interface LoginBody {                                                    // [4]
+  email: string;
+  password: string;
+}
+
+export const login = async (                                             // [5]
+  req: Request<{}, {}, LoginBody>,                                      // [6]
+  res: Response                                                         // [7]
+): Promise<void> => {                                                    // [8]
+  try {
+    const { email, password } = req.body;                               // [9]
+    
+    const user = await User.findOne({ email });                         // [10]
+    if (!user) {
+      res.status(401).json({ message: 'Invalid credentials' });
+      return;                                                           // [11]
+    }
+    
+    const isMatch = await user.matchPassword(password);                 // [12]
+    if (!isMatch) {
+      res.status(401).json({ message: 'Invalid credentials' });
+      return;                                                           // [13]
+    }
+    
+    const token = jwt.sign(                                             // [14]
+      { userId: user._id, email: user.email }, 
+      process.env.JWT_SECRET!,                                         // [15]
+      { expiresIn: '1h' }
+    );
+    
+    res.json({                                                          // [16]
+      token,
+      user: {
+        id: user._id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName
+      }
+    });
+  } catch (error) {                                                     // [17]
+    console.error('Login error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+```
+
+**What Changed & TypeScript Syntax Explained:**
+
+**[1-3] Import Statements:**
+- JavaScript: `const jwt = require('jsonwebtoken');`
+- TypeScript: 
+  ```typescript
+  import { Request, Response } from 'express';
+  import jwt from 'jsonwebtoken';
+  import User, { IUser } from '../../domain/models/User';
+  ```
+- **What's improved**: 
+  - ES module syntax
+  - Express types (Request, Response) imported
+  - TypeScript interface IUser imported from User model
+
+**[4] Request Type Interface:**
+- New in TypeScript: `interface LoginBody { email: string; password: string; }`
+- **What it means**:
+  - Defines the expected structure of login request body
+  - Provides type safety for request data
+  - Improves code documentation
+
+**[5-8] Function Declaration:**
+- JavaScript: `exports.login = async (req, res) => {`
+- TypeScript: 
+  ```typescript
+  export const login = async (
+    req: Request<{}, {}, LoginBody>,
+    res: Response
+  ): Promise<void> => {
+  ```
+- **What's improved**:
+  - ES module export syntax
+  - Generic Request type with params, response body, request body
+  - Return type specified as Promise<void>
+
+**[9-10] Request Handling:**
+- Same logic but with TypeScript-verified types
+- **What's checked**:
+  - `email` and `password` are confirmed to be strings
+  - TypeScript knows `User.findOne()` returns Promise<IUser | null>
+
+**[11, 13] Early Returns:**
+- JavaScript: `return res.status(401)...`
+- TypeScript: 
+  ```typescript
+  res.status(401)...
+  return;
+  ```
+- **What's improved**:
+  - Better style for void functions (send response, then return)
+  - TypeScript understands the control flow
+
+**[15] Non-null Assertion:**
+- New in TypeScript: `process.env.JWT_SECRET!`
+- **What it means**:
+  - The `!` tells TypeScript to trust that JWT_SECRET exists
+  - Avoids TypeScript error about potentially undefined value
+  - Better alternative would be environment variable validation
+
+**[17] Error Handling:**
+- JavaScript: `catch (err)`
+- TypeScript: `catch (error)`
+- **What's improved**:
+  - More consistent naming (error vs err)
+  - TypeScript understands error object type
+
+### Step-by-Step Migration Process
+
+Here's the detailed process for migrating a controller file:
+
+1. **Update import in the JavaScript file first**:
+   ```javascript
+   // Old
+   const User = require('../../domain/models/User');
+   
+   // New - update this FIRST while keeping the file as .js
+   const User = require('../../domain/models/User.ts'); 
+   ```
+
+2. **Test that the application still works** with the updated import
+
+3. **Create the parallel TypeScript file**:
+   ```bash
+   # Create the TypeScript file alongside the JavaScript file
+   touch src/api/controllers/authController.ts
+   ```
+
+4. **Implement the TypeScript version** with proper types and ES module syntax
+
+5. **Update the import in other files that use the controller**:
+   ```javascript
+   // In routes file (e.g., src/api/routes/auth.js)
+   // Old
+   const { login } = require('../controllers/authController');
+   
+   // New
+   import { login } from '../controllers/authController';
+   ```
+
+6. **Test thoroughly** to ensure both versions work correctly
+
+7. **Remove the JavaScript file** once all imports are updated and tests pass:
+   ```bash
+   git rm src/api/controllers/authController.js
+   ```
+
+### Migration Best Practices for Controllers
+
+When migrating controller files:
+
+1. **Define request/response interfaces**:
+   ```typescript
+   interface CreateUserRequest {
+     email: string;
+     password: string;
+     firstName: string;
+     lastName: string;
+   }
+   
+   interface UserResponse {
+     id: string;
+     email: string;
+     firstName: string;
+     lastName: string;
+   }
+   ```
+
+2. **Use Express Generic Types**:
+   ```typescript
+   // Request<Params, ResBody, ReqBody, Query>
+   req: Request<{}, UserResponse, CreateUserRequest, {}>
+   ```
+
+3. **Return Promise<void> for async controllers**:
+   ```typescript
+   async function controllerFunction(req: Request, res: Response): Promise<void> {
+     // Implementation
+   }
+   ```
+
+4. **Handle authentication properly**:
+   ```typescript
+   // Define a custom request with user property
+   interface AuthRequest extends Request {
+     user?: {
+       userId: string;
+       email: string;
+     };
+   }
+   
+   // Use this type in protected routes
+   function protectedRoute(req: AuthRequest, res: Response): void {
+     if (!req.user) {
+       res.status(401).json({ message: 'Unauthorized' });
+       return;
+     }
+     
+     // Access user data safely
+     const { userId } = req.user;
+   }
+   ```
+
 #### 4. Test Your Changes
 
 Before removing any JavaScript files:
