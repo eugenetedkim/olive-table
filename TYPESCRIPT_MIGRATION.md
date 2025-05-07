@@ -784,6 +784,48 @@ While it does require an extra step, this methodical approach significantly redu
 
 #### 3. Test Your Changes After Import Updates
 
+##### 3.1 Set Up the Docker Environment for Testing
+
+Before running the test commands, you need to get the Docker environment up and running with all services:
+
+```bash
+# Start Docker Desktop application first
+# Docker Desktop initializes the Docker Engine, virtualization layer, 
+# networking, and other components needed for container orchestration
+
+# Once Docker Desktop is fully loaded (you may see Kubernetes starting as well):
+
+# Navigate to your project root directory
+cd path/to/olive-table
+
+# Build all services
+docker compose build
+
+# Start the containers
+docker compose up
+
+# Alternatively, you can build and start in one command
+docker compose up --build
+
+# If you want to run in detached mode (background)
+docker compose up -d
+```
+
+Wait for all services to start up. You should see console output indicating:
+- MongoDB connection established
+- Identity service running on port 3001
+- Event service running on port 3002
+- Invitation service running on port 3003
+- API Gateway running on port 3000
+
+Verify that all services are running:
+```bash
+# Check status of all containers
+docker compose ps
+```
+
+##### 3.2 Run End-to-End Tests
+
 Before migrating the actual JavaScript files to TypeScript:
 - Test the entire user flow to ensure your import updates work correctly:
   - Register a user (test User model and auth controller)
@@ -857,6 +899,33 @@ curl -X PATCH http://localhost:3000/api/invitations/$INVITATION_ID \
 ```
 
 If any issues arise during testing, the two-phase approach makes it easier to identify and fix problems without affecting the entire codebase.
+
+##### 3.3 Troubleshooting Docker Issues
+
+If you encounter problems with the Docker environment:
+
+```bash
+# View logs from all containers
+docker compose logs
+
+# View logs from a specific service
+docker compose logs identity-service
+
+# Restart a specific service
+docker compose restart identity-service
+
+# Tear down and rebuild everything
+docker compose down
+docker compose up --build
+```
+
+Common issues and solutions:
+- **MongoDB connection errors**: Check that the MongoDB container is running and healthy
+- **Service not starting**: Check the logs for that specific service
+- **API Gateway can't connect to services**: Ensure all service containers are running
+- **Port conflicts**: Make sure no other applications are using the configured ports
+
+After confirming that all services are working properly with your updated import references, you can proceed to the next phase of migration.
 
 #### 4. Migrate Dependent Files
 
