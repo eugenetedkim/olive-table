@@ -813,12 +813,47 @@ curl -X POST http://localhost:3000/api/auth/login \
 
 # Use the token from login response for subsequent requests
 # TOKEN=<token from login response>
+# USER_ID=<user_id from login response>
 
 # Create an event
 curl -X POST http://localhost:3000/api/events \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"title":"Test Event","description":"Testing","date":"2023-12-01","startTime":"18:00","endTime":"20:00","location":"Test Location"}'
+
+# Store the event ID from the response
+# EVENT_ID=<event_id from create event response>
+
+# Send an invitation
+curl -X POST http://localhost:3000/api/invitations \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"eventId":"'$EVENT_ID'","inviteeId":"another-user-id","inviterId":"'$USER_ID'"}'
+
+# To test invitation responses (simulating the invitee):
+# Register another user to be the invitee
+curl -X POST http://localhost:3000/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"email":"invitee@example.com","password":"password123","firstName":"Invitee","lastName":"User"}'
+
+# Login as invitee
+curl -X POST http://localhost:3000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"invitee@example.com","password":"password123"}'
+
+# Get invitee token
+# INVITEE_TOKEN=<token from invitee login response>
+
+# Get invitations for the invitee
+curl -X GET http://localhost:3000/api/invitations \
+  -H "Authorization: Bearer $INVITEE_TOKEN"
+
+# Respond to the invitation (accept)
+# INVITATION_ID=<invitation_id from get invitations response>
+curl -X PATCH http://localhost:3000/api/invitations/$INVITATION_ID \
+  -H "Authorization: Bearer $INVITEE_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"status":"accepted"}'
 ```
 
 If any issues arise during testing, the two-phase approach makes it easier to identify and fix problems without affecting the entire codebase.
