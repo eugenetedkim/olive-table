@@ -29,21 +29,35 @@ graph TD
         Content[Content Service]
     end
     
-    Services --> Storage[Data Storage]
+    User -->|Stores user data| UserDB[(Identity Database)]
+    Event -->|Stores event data| EventDB[(Events Database)]
+    Recipe -->|Stores recipe data| RecipeDB[(Recipes Database)]
+    Social -->|Stores social data| SocialDB[(Social Database)]
+    Dietary -->|Stores analysis data| DietaryDB[(Dietary Database)]
+    Content -->|Stores content data| ContentDB[(Content Database)]
     
-    subgraph DataLayer[Data Layer]
-        MongoDB[(MongoDB)]
+    subgraph CachingLayer[Caching Layer]
         Redis[(Redis Cache)]
+    end
+    
+    subgraph StorageLayer[Storage Layer]
         CloudStorage[(Cloud Storage)]
     end
     
-    classDef client fill:#4a90e2,stroke:#333,stroke-width:2px
-    classDef service fill:#7ed321,stroke:#333,stroke-width:2px
-    classDef data fill:#f5a623,stroke:#333,stroke-width:2px
+    Services --> CachingLayer
+    Services --> StorageLayer
+    
+    classDef client fill:#4a90e2,stroke:#333,stroke-width:2px,color:white
+    classDef service fill:#7ed321,stroke:#333,stroke-width:2px,color:white
+    classDef database fill:#f5a623,stroke:#333,stroke-width:2px,color:white
+    classDef cache fill:#9013fe,stroke:#333,stroke-width:2px,color:white
+    classDef storage fill:#50e3c2,stroke:#333,stroke-width:2px,color:white
     
     class WebApp,MobileWeb,NativeApps client
     class User,Event,Recipe,Social,Dietary,Content service
-    class MongoDB,Redis,CloudStorage data
+    class UserDB,EventDB,RecipeDB,SocialDB,DietaryDB,ContentDB database
+    class Redis cache
+    class CloudStorage storage
 ```
 
 ### 1.3 Third-Party Integrations
@@ -76,7 +90,9 @@ graph TD
 - **API Contracts**: Shared TypeScript interfaces between services
 
 ### 2.3 Database
-- **Primary Database**: MongoDB
+- **Primary Database**: MongoDB with database-per-service isolation
+- **Database Separation**: Each microservice has its own dedicated database
+- **Cross-Service Queries**: Handled at the application level through service communication
 - **Caching**: Redis
 - **Media Storage**: Cloud object storage (S3/GCS)
 - **Database ORM/ODM**: Mongoose with TypeScript support
@@ -126,6 +142,11 @@ interface IDietaryProfile extends Document {
 }
 ```
 
+#### Database:
+- **Name**: `identity`
+- **Collections**: `users`, `dietary_profiles`
+- **Isolation**: All user-related data is contained within this database
+
 ### 3.2 Event Service
 Handles event creation, invitations, and RSVPs.
 
@@ -150,6 +171,11 @@ interface IEvent extends Document {
 }
 ```
 
+#### Database:
+- **Name**: `events`
+- **Collections**: `events`
+- **Isolation**: All event-related data is contained within this database
+
 ### 3.3 Recipe Service
 Manages recipes, modifications, and dietary compatibility.
 
@@ -170,6 +196,11 @@ interface IRecipe extends Document {
   nutritionalInfo: INutrition;
 }
 ```
+
+#### Database:
+- **Name**: `recipes`
+- **Collections**: `recipes`, `ingredients`
+- **Isolation**: All recipe-related data is contained within this database
 
 ### 3.4 Social Service
 Handles social interactions, sharing, and comments.
@@ -194,6 +225,11 @@ interface IPost extends Document {
 }
 ```
 
+#### Database:
+- **Name**: `social`
+- **Collections**: `posts`, `comments`, `follows`
+- **Isolation**: All social interaction data is contained within this database
+
 ### 3.5 Dietary Analysis Service
 Processes group dietary needs and generates compatibility reports.
 
@@ -211,6 +247,11 @@ interface ICompatibilityReport extends Document {
   lastUpdated: Date;
 }
 ```
+
+#### Database:
+- **Name**: `dietary`
+- **Collections**: `compatibility_reports`, `dietary_analysis`
+- **Isolation**: All dietary analysis data is contained within this database
 
 ### 3.6 Content Service
 Manages creator profiles and content integration.
@@ -232,11 +273,47 @@ interface ICreator extends Document {
 }
 ```
 
-## 4. Database Schema
+#### Database:
+- **Name**: `content`
+- **Collections**: `creators`, `contents`
+- **Isolation**: All content-related data is contained within this database
 
-### 4.1 MongoDB Collections
+## 4. Database Architecture
 
-#### Users Collection
+### 4.1 Database-per-Service Pattern
+
+Olive Table implements the database-per-service pattern, where each microservice owns and manages its own database:
+
+- **Physical Isolation**: Each service has its own dedicated MongoDB database
+- **Logical Boundaries**: Data is organized according to domain boundaries
+- **Independent Evolution**: Schema changes in one service don't affect others
+- **Scalability**: Databases can be scaled independently based on service needs
+- **Resilience**: Database failures are isolated to individual services
+
+### 4.2 Cross-Service Data Access
+
+Since data is distributed across multiple databases, Olive Table implements these patterns for cross-service data access:
+
+1. **Service-to-Service Communication**: Services make API calls to each other when they need data outside their domain
+2. **API Composition**: The API Gateway or client composes data from multiple service calls
+3. **Application-Level Joins**: Data joining happens in the application code, not the database
+4. **Eventually Consistent Updates**: Changes propagate through the system asynchronously
+5. **Bounded Context Mapping**: Services maintain necessary projections of external data
+
+### 4.3 Data Consistency Challenges & Solutions
+
+In a distributed database environment, maintaining data consistency requires careful design:
+
+- **Eventual Consistency**: The system may have temporary inconsistencies but will converge to a consistent state
+- **Event-Based Synchronization**: Services publish events when data changes and other services subscribe to relevant events
+- **CQRS Pattern**: Separate read and write models to optimize for different access patterns
+- **Local Transactions**: Each service maintains ACID properties within its own database
+- **Compensating Transactions**: For failed multi-service operations, implement compensation mechanisms
+- **Optimistic Concurrency**: Use version fields to detect and resolve conflicts
+
+### 4.4 MongoDB Collections
+
+#### Users Collection (in Identity Database)
 ```typescript
 const UserSchema = new Schema<IUser>({
   email: { type: String, required: true, unique: true },
@@ -252,10 +329,10 @@ const UserSchema = new Schema<IUser>({
 }, { timestamps: true });
 ```
 
-#### Events Collection
+#### Events Collection (in Events Database)
 ```typescript
 const EventSchema = new Schema<IEvent>({
-  hostId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  hostId: { type: String, required: true }, // Reference to User._id in Identity Database
   title: { type: String, required: true },
   description: String,
   dateTime: { type: Date, required: true },
@@ -265,12 +342,38 @@ const EventSchema = new Schema<IEvent>({
   },
   eventType: String,
   beverageDesignation: String,
-  invitees: [{ type: Schema.Types.ObjectId, ref: 'User' }],
+  invitees: [String], // References to User._id in Identity Database
   menu: {
-    confirmed: [{ type: Schema.Types.ObjectId, ref: 'Recipe' }],
-    proposed: [{ type: Schema.Types.ObjectId, ref: 'Recipe' }]
+    confirmed: [String], // References to Recipe._id in Recipe Database
+    proposed: [String]   // References to Recipe._id in Recipe Database
   },
   status: String
+}, { timestamps: true });
+```
+
+#### Invitations Collection (in Invitations Database)
+```typescript
+const InvitationSchema = new Schema<IInvitation>({
+  eventId: {
+    type: String, // Reference to Event._id in Events Database
+    required: true
+  },
+  userId: {
+    type: String, // Reference to User._id in Identity Database
+    required: true
+  },
+  invitedBy: {
+    type: String, // Reference to User._id in Identity Database
+    required: true
+  },
+  status: {
+    type: String,
+    enum: ['pending', 'accepted', 'declined', 'maybe'],
+    default: 'pending'
+  },
+  respondedAt: {
+    type: Date
+  }
 }, { timestamps: true });
 ```
 
