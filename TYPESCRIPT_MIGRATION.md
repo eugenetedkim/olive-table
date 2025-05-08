@@ -834,13 +834,14 @@ docker compose ps
 
 ##### 3.2 Run End-to-End Tests
 
-Before migrating the actual JavaScript files to TypeScript:
-- Test the entire user flow to ensure your import updates work correctly:
-  - Register a user (test User model and auth controller)
-  - Log in (test authentication and JWT token generation)
-  - Create an event (test Event model and protected routes)
-  - Send an invitation (test Invitation model and cross-service communication)
-  - Respond to an invitation (test update operations)
+Test the entire user flow to ensure your import updates work correctly. You can use either curl commands (command line) or Postman (GUI) for testing.
+
+**Testing sequence:**
+- Register a user (test User model and auth controller)
+- Log in (test authentication and JWT token generation)
+- Create an event (test Event model and protected routes)
+- Send an invitation (test Invitation model and cross-service communication)
+- Respond to an invitation (test update operations)
 
 This end-to-end testing approach validates that:
 - TypeScript models correctly integrate with JavaScript files
@@ -849,7 +850,8 @@ This end-to-end testing approach validates that:
 - API routes are properly configured
 - Both read and write database operations work
 
-Example curl commands for testing:
+### Option 1: Testing with curl commands
+
 ```bash
 # Register a user
 curl -X POST http://localhost:3000/api/auth/register \
@@ -905,6 +907,139 @@ curl -X PATCH http://localhost:3000/api/invitations/$INVITATION_ID \
   -H "Content-Type: application/json" \
   -d '{"status":"accepted"}'
 ```
+
+### Option 2: Testing with Postman
+
+1. **Setup Postman:**
+   - Download and install [Postman](https://www.postman.com/downloads/)
+   - Create a new Collection (e.g., "TypeScript Migration Tests")
+   - Set up environment variables to store values like tokens
+
+2. **Create requests in sequence:**
+
+   **Register User**
+   - Method: POST
+   - URL: http://localhost:3000/api/auth/register
+   - Headers: Content-Type: application/json
+   - Body (raw/JSON):
+     ```json
+     {
+       "email": "test@example.com",
+       "password": "password123",
+       "firstName": "Test",
+       "lastName": "User"
+     }
+     ```
+
+   **Login**
+   - Method: POST
+   - URL: http://localhost:3000/api/auth/login
+   - Headers: Content-Type: application/json
+   - Body (raw/JSON):
+     ```json
+     {
+       "email": "test@example.com",
+       "password": "password123"
+     }
+     ```
+   - Test Script: Save token to environment variable:
+     ```javascript
+     pm.environment.set("token", pm.response.json().token);
+     pm.environment.set("userId", pm.response.json().user.id);
+     ```
+
+   **Create Event**
+   - Method: POST
+   - URL: http://localhost:3000/api/events
+   - Headers: 
+     - Content-Type: application/json
+     - Authorization: Bearer {{token}}
+   - Body (raw/JSON):
+     ```json
+     {
+       "title": "Test Event",
+       "description": "Testing",
+       "date": "2023-12-01",
+       "startTime": "18:00",
+       "endTime": "20:00",
+       "location": "Test Location"
+     }
+     ```
+   - Test Script: Save event ID to environment variable:
+     ```javascript
+     pm.environment.set("eventId", pm.response.json()._id);
+     ```
+
+   **Send Invitation**
+   - Method: POST
+   - URL: http://localhost:3000/api/invitations
+   - Headers: 
+     - Content-Type: application/json
+     - Authorization: Bearer {{token}}
+   - Body (raw/JSON):
+     ```json
+     {
+       "eventId": "{{eventId}}",
+       "inviteeId": "another-user-id",
+       "inviterId": "{{userId}}"
+     }
+     ```
+
+   **Register Invitee**
+   - Method: POST
+   - URL: http://localhost:3000/api/auth/register
+   - Headers: Content-Type: application/json
+   - Body (raw/JSON):
+     ```json
+     {
+       "email": "invitee@example.com",
+       "password": "password123",
+       "firstName": "Invitee", 
+       "lastName": "User"
+     }
+     ```
+
+   **Login as Invitee**
+   - Method: POST
+   - URL: http://localhost:3000/api/auth/login
+   - Headers: Content-Type: application/json
+   - Body (raw/JSON):
+     ```json
+     {
+       "email": "invitee@example.com",
+       "password": "password123"
+     }
+     ```
+   - Test Script: Save invitee token to environment variable:
+     ```javascript
+     pm.environment.set("inviteeToken", pm.response.json().token);
+     ```
+
+   **Get Invitations for Invitee**
+   - Method: GET
+   - URL: http://localhost:3000/api/invitations
+   - Headers: Authorization: Bearer {{inviteeToken}}
+   - Test Script: Save invitation ID to environment variable:
+     ```javascript
+     pm.environment.set("invitationId", pm.response.json()[0]._id);
+     ```
+
+   **Respond to Invitation**
+   - Method: PATCH
+   - URL: http://localhost:3000/api/invitations/{{invitationId}}
+   - Headers: 
+     - Content-Type: application/json
+     - Authorization: Bearer {{inviteeToken}}
+   - Body (raw/JSON):
+     ```json
+     {
+       "status": "accepted"
+     }
+     ```
+
+3. **Run the collection** in sequence to test the entire workflow
+
+Postman's environment variables make it easy to pass data between requests, and you can add tests to verify response status codes and content.
 
 If any issues arise during testing, the two-phase approach makes it easier to identify and fix problems without affecting the entire codebase.
 
