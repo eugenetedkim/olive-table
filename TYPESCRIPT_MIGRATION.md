@@ -14,7 +14,7 @@ Use this checklist to track your progress across all services:
 - [x] Update package.json scripts
 - [x] Install TypeScript dependencies
 - [x] Migrate User model
-- [ ] Update User model imports in other files
+- [ ] Create TypeScript versions of files that import User model
 - [ ] Migrate Auth middleware
 - [ ] Migrate Auth controller
 - [ ] Migrate Routes
