@@ -6,6 +6,7 @@ Olive Table is an event management platform with Domain-Driven Design (DDD) arch
 - Each Bounded Context (User, Event, Invitation) is its own microservice
 - Domain objects are naturally represented in MongoDB
 - Rich domain models with business logic
+- Each service owns its own dedicated database
 
 Our approach: **Microservices Architecture** - Breaking the application into small, independent services that each handle a specific business domain.
 
@@ -15,17 +16,19 @@ Think of a restaurant:
 - The kitchen (backend) has different stations for different tasks
 - The waiter (API Gateway) coordinates everything
 - Each station can operate independently
+- Each station maintains its own ingredients and tools (separate databases)
 
 This separation allows:
 - Each service can be updated independently
 - Easier to scale specific parts
 - Different teams can work on different services
 - If one service fails, others keep running
+- Data isolation prevents cascading failures
 
 ## The Mental Model
 
 ```
-User Request → API Gateway → Authentication → Business Logic → Database
+User Request → API Gateway → Authentication → Business Logic → Service-Specific Database
 ```
 
 Each arrow represents a decision point:
@@ -33,6 +36,7 @@ Each arrow represents a decision point:
 - "Is this user authenticated?"
 - "Does this user have permission?"
 - "What data needs to be updated?"
+- "Which database should store this data?"
 
 ## Service Breakdown
 
@@ -45,6 +49,7 @@ Each arrow represents a decision point:
 - Routes requests to the appropriate service
 - Handles cross-cutting concerns (CORS, security headers)
 - Manages authentication at the gateway level
+- Orchestrates cross-service data needs
 
 ```javascript
 // Middleware concept: Functions that execute before reaching your main logic
@@ -61,6 +66,7 @@ app.use(loggerMiddleware); // "Let's keep track of what they're doing"
 - Password hashing (never store raw passwords!)
 - JWT tokens (like a wristband at a club - proves you've been checked)
 - User profile management
+- Maintains its own dedicated identity database
 
 ```javascript
 // Password Hashing Concept
@@ -78,6 +84,7 @@ app.use(loggerMiddleware); // "Let's keep track of what they're doing"
 - Authorization (can you modify this event?)
 - Business rules (event validations)
 - Event metadata (dietary preferences, visibility)
+- Maintains its own dedicated events database
 
 ```javascript
 // Authorization vs Authentication
@@ -94,6 +101,7 @@ app.use(loggerMiddleware); // "Let's keep track of what they're doing"
 - RSVP status tracking
 - Business logic for invitations
 - Preventing duplicate invitations
+- Maintains its own dedicated invitations database
 
 ## Technical Decisions & Why
 
@@ -122,15 +130,14 @@ app.use(loggerMiddleware); // "Let's keep track of what they're doing"
 - Compile-time error checking
 - IDE autocompletion for development speed
 
-**Development Model**: Shared instance with separate databases
-**Production Model**: Could scale to separate instances for complete isolation
+**Database Design**:
+- Each service has its own dedicated database
+- Complete isolation between service data boundaries
+- Independent scaling of databases based on service needs
+- Ability to optimize database settings per service requirements
+- Cross-service data needs handled at application level
 
-**Future Scalability**:
-- Handles basic social features (friend lists, follows) well
-- For complex social graphs, can add specialized service later
-- Flexible enough to evolve with requirements
-
-**Mental Model**: Like an apartment building with separate units - same building, different apartments (databases)
+**Mental Model**: Like separate buildings for different departments - each with their own storage and records system
 
 ### 3. Docker
 **Why**: "It works on my machine" syndrome solved
@@ -166,14 +173,23 @@ Client Data → Type Check → Range Check → Business Rules → Database
 
 ## Database Design Philosophy
 
-### 1. Separation by Domain
-- Each service has its own database within a shared MongoDB instance (development approach)
-- Different databases (e.g., olive_table_identity, olive_table_events)
-- Logical separation while sharing resources
-- In production: Could scale to separate MongoDB instances for each service
-- Prevents tight coupling at the data level while maintaining flexibility
+### 1. Database-Per-Service Pattern
+- Each service owns its own dedicated MongoDB database
+- Complete database separation (identity, events, invitations)
+- Service boundaries strictly enforced at the database level
+- No direct cross-database access allowed
+- Prevents tight coupling by enforcing communication through service APIs
+- True microservice isolation with separate persistence layers
+- Ability to scale, backup, and optimize each database independently
 
-### 2. Schema Evolution
+### 2. Cross-Service Data Access
+- Services communicate via APIs to access data outside their domain
+- API Gateway orchestrates multi-service data needs
+- Application-level joins handle combined data requirements
+- Eventual consistency across service boundaries
+- CQRS (Command Query Responsibility Segregation) for complex cross-service operations
+
+### 3. Schema Evolution
 ```javascript
 // User Schema Evolution
 Version 1: { email, password }
@@ -198,6 +214,24 @@ DELETE /events/:id  - Delete event
 Client Request → Middleware Stack → Controller → Service Layer → Database
                                                             ↓
 Client Response ← Serialization ← Business Logic ← Database Response
+```
+
+### 3. Cross-Database Query Flow
+```javascript
+// Cross-Service Data Flow
+Client Request → API Gateway
+                    ↓
+    ┌───────────────┼───────────────┐
+    ↓               ↓               ↓
+Event Service   Identity Service   Invitation Service  
+    ↓               ↓               ↓
+Events DB       Identity DB       Invitations DB
+    ↓               ↓               ↓
+    └───────────────┼───────────────┘
+                    ↓
+               API Gateway (combines data)
+                    ↓
+              Client Response
 ```
 
 ## Development Workflow
@@ -236,6 +270,10 @@ Unit Tests → Service Tests → Integration Tests → E2E Tests
 **Purpose**: Cross-cutting concerns
 **Mental Model**: Security guards - check everyone before entry
 
+### 5. API Composition Pattern
+**Purpose**: Combine data from multiple services
+**Mental Model**: Puzzle assembly - putting pieces from different sources together
+
 ## Error Handling Philosophy
 
 ### 1. Error Types
@@ -256,9 +294,9 @@ Database Error → Service Layer → Controller → Client
 
 ### 1. Configuration Mindset
 ```
-Development  → Local database, debug logging
-Staging      → Shared database, limited logging
-Production   → Isolated database, minimal logging
+Development  → Local databases, debug logging
+Staging      → Shared databases, limited logging
+Production   → Isolated databases, minimal logging
 ```
 
 ### 2. Secret Management
@@ -275,6 +313,7 @@ Production → Secret management service
 2. Choose technology stack
 3. Define service boundaries
 4. Create initial schemas
+5. Set up separate databases per service
 
 ### Phase 2: Core Services
 1. Build identity service first (everyone needs authentication)
@@ -287,26 +326,32 @@ Production → Secret management service
 2. Implement cross-service communication
 3. Set up shared utilities
 4. Create integration tests
+5. Implement application-level join capabilities
 
 ### Phase 4: Production Ready
 1. Add logging and monitoring
 2. Implement error handling
 3. Set up CI/CD pipeline
 4. Create deployment scripts
+5. Configure database backup and recovery
 
 ## Key Takeaways
 
 1. **Separation of Concerns**: Each component has one job
 2. **Single Responsibility**: Services handle one domain
-3. **Scalability by Design**: Microservices scale independently
-4. **Security as a Requirement**: Not an afterthought
-5. **Maintainability**: Code should be easy to understand and change
+3. **Database Isolation**: Each service has its own database
+4. **Scalability by Design**: Microservices scale independently
+5. **Security as a Requirement**: Not an afterthought
+6. **Data Sovereignty**: Services fully own their data
+7. **Maintainability**: Code should be easy to understand and change
 
 ## The Developer's Mindset
 
 When building Olive Table, always ask:
 - "What is this component's single responsibility?"
 - "How does this fit into the bigger picture?"
+- "Which service (and database) should own this data?"
+- "How do I handle cross-service data needs?"
 - "What could go wrong, and how do I handle it?"
 - "Is this the simplest solution that works?"
 - "How will this scale?"
