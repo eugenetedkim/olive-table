@@ -1,12 +1,7 @@
 // File path: services/identity-service/src/api/controllers/authController.js
 
 const jwt = require('jsonwebtoken');
-
-/** Old (CommonJS) */
-// const User = require('../../domain/models/User');
-
-/** New (ES Modules) */
-import User, { IUser } from '../../domain/models/User';
+const User = require('../../domain/models/User');
 
 // Register user
 exports.register = async (req, res) => {
