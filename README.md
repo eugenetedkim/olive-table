@@ -53,9 +53,9 @@ graph TD
         Gateway -->|Events| Event[Event Service]
         Gateway -->|Invites| Invite[Invitation Service]
         
-        Identity --> MongoDB[MongoDB]
-        Event --> MongoDB
-        Invite --> MongoDB
+        Identity -->|Stores user data| IdentityDB[(Identity Database)]
+        Event -->|Stores event data| EventDB[(Event Database)]
+        Invite -->|Stores invitation data| InviteDB[(Invitation Database)]
     end
     
     classDef service fill:#4a90e2,stroke:#333,stroke-width:2px,color:white
@@ -63,18 +63,37 @@ graph TD
     classDef gateway fill:#f5a623,stroke:#333,stroke-width:2px,color:white
     
     class Identity,Event,Invite service
-    class MongoDB database
+    class IdentityDB,EventDB,InviteDB database
     class Gateway gateway
 ```
 
 ### 🧩 Services Overview
 
-| Service | Purpose | Port |
-|---------|---------|------|
-| **API Gateway** | Request routing & authentication | 3000 |
-| **Identity Service** | User management & auth | 3001 |
-| **Event Service** | Event CRUD operations | 3002 |
-| **Invitation Service** | RSVP management | 3003 |
+| Service | Purpose | Port | Database |
+|---------|---------|------|----------|
+| **API Gateway** | Request routing & authentication | 3000 | N/A |
+| **Identity Service** | User management & auth | 3001 | identity |
+| **Event Service** | Event CRUD operations | 3002 | events |
+| **Invitation Service** | RSVP management | 3003 | invitations |
+
+### MongoDB Configuration
+
+Olive Table follows database-per-service pattern for data isolation:
+
+- Each microservice maintains its own dedicated MongoDB database
+- Cross-service queries are handled at the application level
+- Database names match their respective services:
+  - `identity`: Stores user profiles and authentication data
+  - `events`: Manages event information and metadata
+  - `invitations`: Tracks invitation status and responses
+
+### Data Consistency
+
+Since data is distributed across multiple databases, Olive Table ensures consistency through:
+
+- Eventual consistency patterns
+- Service-to-service communication for data synchronization
+- Application-level joins for complex queries that span multiple services
 
 ---
 
@@ -218,6 +237,12 @@ curl http://localhost:3000/api/invitations?userId=USER_ID \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
+**Get event invitations with user details:**
+```bash
+curl http://localhost:3000/api/events/EVENT_ID/invitations-with-users \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
 ---
 
 ## 🔄 API Workflow
@@ -255,6 +280,16 @@ sequenceDiagram
     G->>V: /invitations
     V-->>G: Invitation data
     G-->>U: 201 Created
+
+    Note over U,V: Cross-Service Data Query
+    U->>G: GET /api/events/{id}/invitations-with-users
+    G->>E: GET /events/{id}
+    E-->>G: Event data
+    G->>V: GET /invitations?eventId={id}
+    V-->>G: Invitations data
+    G->>I: GET /users?userIds=[ids from invitations]
+    I-->>G: Users data
+    G-->>U: Combined event, invitations, and users data
 ```
 </details>
 
@@ -317,6 +352,11 @@ docker compose up --build
 **Authentication errors**
 - Verify JWT_SECRET matches in `api-gateway` and `identity-service`
 - Check token expiration (24h default)
+
+**Cross-Service Data Issues**
+- Ensure service communication is properly configured
+- Check that database URIs are correctly set in environment variables
+- Verify that service-to-service API calls have proper authentication
 
 ### Logging
 ```bash
