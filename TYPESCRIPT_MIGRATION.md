@@ -725,11 +725,30 @@ user.firstName = 42;    // ❌ TypeScript: Type 'number' is not assignable to ty
 user.doesntExist();     // ❌ TypeScript: Property 'doesntExist' does not exist
 ```
 
-### 1.5 Next Steps After User Model Migration
+## 1.5 Next Steps After User Model Migration
 
 After successfully migrating the User model to TypeScript, follow these steps to complete the migration of related components:
 
-#### 1. Identify Files Referencing User Model
+### 1.5.1 Understanding the Parallel Files Approach
+
+The most reliable way to migrate from JavaScript to TypeScript is using a parallel files approach:
+
+1. **Keep JavaScript files functional during migration**
+   - Original `.js` files remain untouched and working
+   - New `.ts` files are created alongside them
+   - Both versions coexist during the transition
+
+2. **Maintain module system consistency**
+   - JavaScript files continue using CommonJS (require/exports)
+   - TypeScript files use ES Modules (import/export)
+   - Module systems are not mixed in the same file
+
+3. **Let your build system handle the integration**
+   - TypeScript compiles to JavaScript in a separate directory (e.g., `dist/`)
+   - Import paths refer to logical module locations, not file extensions
+   - The Node.js module resolution system finds the right files
+
+### 1.5.2 Identify Files for Migration
 
 First, identify all files that reference the User model. You can use either command line or IDE search:
 
@@ -750,341 +769,9 @@ Either method helps you locate:
 - Routes that use User-related controllers (`users.js`)
 - Any other files that might depend on the User model
 
-#### 2. Update Import References
+### 1.5.3 Create TypeScript Versions of Files
 
-For each file that imports the User model, update the import syntax:
-
-```javascript
-// Old (CommonJS)
-const User = require('../../domain/models/User');
-
-// New (ES Modules)
-import User, { IUser } from '../../domain/models/User';
-```
-
-The key files to update first in your project are:
-- `services/identity-service/src/api/controllers/userController.js`
-- `services/identity-service/src/api/controllers/authController.js`
-
-**Why Update Imports Before Creating TypeScript Files?**
-
-This two-phase approach (updating imports first, then creating TypeScript files) might seem redundant, but it serves several important purposes:
-
-1. **Risk Mitigation**: By updating only the imports first, you validate that your TypeScript model works with existing JavaScript code before investing time in converting everything else.
-
-2. **Incremental Testing**: You can test each small change independently. If updating an import breaks something, you know exactly where to look without having changed the entire codebase.
-
-3. **Operational Continuity**: In a microservice architecture, services need to remain functional during migration. This approach ensures the system works throughout the process.
-
-4. **Easier Debugging**: If there are issues, it's much simpler to troubleshoot when only one aspect has changed at a time.
-
-5. **Team Collaboration**: Multiple team members can work on different aspects of the migration simultaneously with clearer boundaries.
-
-While it does require an extra step, this methodical approach significantly reduces the risk of introducing breaking changes and makes the migration process more manageable.
-
-#### 3. Test Your Changes After Import Updates
-
-After replacing the JavaScript User model with a TypeScript version and updating the imports in related files, it's crucial to test the entire system. This step validates that the TypeScript model correctly integrates with the remaining JavaScript files and that the application as a whole continues to function properly, even though we've only changed the model file and its imports.
-
-Testing at this point is important because:
-1. It validates that your TypeScript implementation of the User model is functionally equivalent to the JavaScript version
-2. It confirms that the import changes are working correctly before investing time in migrating more files
-3. It provides early detection of any type compatibility issues between TypeScript and JavaScript files
-4. It ensures the critical authentication functionality (which depends on the User model) remains intact
-
-##### 3.1 Set Up the Docker Environment for Testing
-
-Before running the test commands, you need to get the Docker environment up and running with all services:
-
-```bash
-# Start Docker Desktop application first
-# Docker Desktop initializes the Docker Engine, virtualization layer, 
-# networking, and other components needed for container orchestration
-
-# Once Docker Desktop is fully loaded (you may see Kubernetes starting as well):
-
-# Navigate to your project root directory
-cd path/to/olive-table
-
-# Build all services
-docker compose build
-
-# Start the containers
-docker compose up
-
-# Alternatively, you can build and start in one command
-docker compose up --build
-
-# If you want to run in detached mode (background)
-docker compose up -d
-```
-
-Wait for all services to start up. You should see console output indicating:
-- MongoDB connection established
-- Identity service running on port 3001
-- Event service running on port 3002
-- Invitation service running on port 3003
-- API Gateway running on port 3000
-
-Verify that all services are running:
-```bash
-# Check status of all containers
-docker compose ps
-```
-
-##### 3.2 Run End-to-End Tests
-
-Test the entire user flow to ensure your import updates work correctly. You can use either curl commands (command line) or Postman (GUI) for testing.
-
-**Testing sequence:**
-- Register a user (test User model and auth controller)
-- Log in (test authentication and JWT token generation)
-- Create an event (test Event model and protected routes)
-- Send an invitation (test Invitation model and cross-service communication)
-- Respond to an invitation (test update operations)
-
-This end-to-end testing approach validates that:
-- TypeScript models correctly integrate with JavaScript files
-- Authentication flows properly across services
-- Cross-service communication functions as expected
-- API routes are properly configured
-- Both read and write database operations work
-
-### Option 1: Testing with curl commands
-
-```bash
-# Register a user
-curl -X POST http://localhost:3000/api/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{"email":"test@example.com","password":"password123","firstName":"Test","lastName":"User"}'
-
-# Login
-curl -X POST http://localhost:3000/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"test@example.com","password":"password123"}'
-
-# Use the token from login response for subsequent requests
-# TOKEN=<token from login response>
-# USER_ID=<user_id from login response>
-
-# Create an event
-curl -X POST http://localhost:3000/api/events \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"title":"Test Event","description":"Testing","date":"2023-12-01","startTime":"18:00","endTime":"20:00","location":"Test Location"}'
-
-# Store the event ID from the response
-# EVENT_ID=<event_id from create event response>
-
-# Send an invitation
-curl -X POST http://localhost:3000/api/invitations \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"eventId":"'$EVENT_ID'","inviteeId":"another-user-id","inviterId":"'$USER_ID'"}'
-
-# To test invitation responses (simulating the invitee):
-# Register another user to be the invitee
-curl -X POST http://localhost:3000/api/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{"email":"invitee@example.com","password":"password123","firstName":"Invitee","lastName":"User"}'
-
-# Login as invitee
-curl -X POST http://localhost:3000/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"invitee@example.com","password":"password123"}'
-
-# Get invitee token
-# INVITEE_TOKEN=<token from invitee login response>
-
-# Get invitations for the invitee
-curl -X GET http://localhost:3000/api/invitations \
-  -H "Authorization: Bearer $INVITEE_TOKEN"
-
-# Respond to the invitation (accept)
-# INVITATION_ID=<invitation_id from get invitations response>
-curl -X PATCH http://localhost:3000/api/invitations/$INVITATION_ID \
-  -H "Authorization: Bearer $INVITEE_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"status":"accepted"}'
-```
-
-### Option 2: Testing with Postman
-
-1. **Setup Postman:**
-   - Download and install [Postman](https://www.postman.com/downloads/)
-   - Create a new Collection (e.g., "TypeScript Migration Tests")
-   - Set up environment variables to store values like tokens
-
-2. **Create requests in sequence:**
-
-   **Register User**
-   - Method: POST
-   - URL: http://localhost:3000/api/auth/register
-   - Headers: Content-Type: application/json
-   - Body (raw/JSON):
-     ```json
-     {
-       "email": "test@example.com",
-       "password": "password123",
-       "firstName": "Test",
-       "lastName": "User"
-     }
-     ```
-
-   **Login**
-   - Method: POST
-   - URL: http://localhost:3000/api/auth/login
-   - Headers: Content-Type: application/json
-   - Body (raw/JSON):
-     ```json
-     {
-       "email": "test@example.com",
-       "password": "password123"
-     }
-     ```
-   - Test Script: Save token to environment variable:
-     ```javascript
-     pm.environment.set("token", pm.response.json().token);
-     pm.environment.set("userId", pm.response.json().user.id);
-     ```
-
-   **Create Event**
-   - Method: POST
-   - URL: http://localhost:3000/api/events
-   - Headers: 
-     - Content-Type: application/json
-     - Authorization: Bearer {{token}}
-   - Body (raw/JSON):
-     ```json
-     {
-       "title": "Test Event",
-       "description": "Testing",
-       "date": "2023-12-01",
-       "startTime": "18:00",
-       "endTime": "20:00",
-       "location": "Test Location"
-     }
-     ```
-   - Test Script: Save event ID to environment variable:
-     ```javascript
-     pm.environment.set("eventId", pm.response.json()._id);
-     ```
-
-   **Send Invitation**
-   - Method: POST
-   - URL: http://localhost:3000/api/invitations
-   - Headers: 
-     - Content-Type: application/json
-     - Authorization: Bearer {{token}}
-   - Body (raw/JSON):
-     ```json
-     {
-       "eventId": "{{eventId}}",
-       "inviteeId": "another-user-id",
-       "inviterId": "{{userId}}"
-     }
-     ```
-
-   **Register Invitee**
-   - Method: POST
-   - URL: http://localhost:3000/api/auth/register
-   - Headers: Content-Type: application/json
-   - Body (raw/JSON):
-     ```json
-     {
-       "email": "invitee@example.com",
-       "password": "password123",
-       "firstName": "Invitee", 
-       "lastName": "User"
-     }
-     ```
-
-   **Login as Invitee**
-   - Method: POST
-   - URL: http://localhost:3000/api/auth/login
-   - Headers: Content-Type: application/json
-   - Body (raw/JSON):
-     ```json
-     {
-       "email": "invitee@example.com",
-       "password": "password123"
-     }
-     ```
-   - Test Script: Save invitee token to environment variable:
-     ```javascript
-     pm.environment.set("inviteeToken", pm.response.json().token);
-     ```
-
-   **Get Invitations for Invitee**
-   - Method: GET
-   - URL: http://localhost:3000/api/invitations
-   - Headers: Authorization: Bearer {{inviteeToken}}
-   - Test Script: Save invitation ID to environment variable:
-     ```javascript
-     pm.environment.set("invitationId", pm.response.json()[0]._id);
-     ```
-
-   **Respond to Invitation**
-   - Method: PATCH
-   - URL: http://localhost:3000/api/invitations/{{invitationId}}
-   - Headers: 
-     - Content-Type: application/json
-     - Authorization: Bearer {{inviteeToken}}
-   - Body (raw/JSON):
-     ```json
-     {
-       "status": "accepted"
-     }
-     ```
-
-3. **Run the collection** in sequence to test the entire workflow
-
-Postman's environment variables make it easy to pass data between requests, and you can add tests to verify response status codes and content.
-
-If any issues arise during testing, the two-phase approach makes it easier to identify and fix problems without affecting the entire codebase.
-
-##### 3.3 Troubleshooting Docker Issues
-
-If you encounter problems with the Docker environment:
-
-```bash
-# View logs from all containers
-docker compose logs
-
-# View logs from a specific service
-docker compose logs identity-service
-
-# Restart a specific service
-docker compose restart identity-service
-
-# Tear down and rebuild everything
-docker compose down
-docker compose up --build
-```
-
-Common issues and solutions:
-- **MongoDB connection errors**: Check that the MongoDB container is running and healthy
-- **Service not starting**: Check the logs for that specific service
-- **API Gateway can't connect to services**: Ensure all service containers are running
-- **Port conflicts**: Make sure no other applications are using the configured ports
-
-After confirming that all services are working properly with your updated import references, you can proceed to the next phase of migration.
-
-#### 4. Migrate Dependent Files
-
-After updating imports and testing, migrate files that directly interact with the User model:
-
-1. **User-related controllers** - These will need updating to use TypeScript interfaces and types
-2. **Authentication middleware** - Often heavily dependent on the User model
-3. **User services** - Any files containing business logic for users
-
-For each file:
-- Create a parallel TypeScript (.ts) file
-- Implement proper interfaces for parameters and return types
-- Add type annotations for variables
-- Convert to ES module syntax
-
-Example for creating TypeScript versions:
+For each file you want to migrate, create a parallel TypeScript version:
 
 ```bash
 # Create TypeScript versions alongside JavaScript files
@@ -1093,293 +780,218 @@ touch services/identity-service/src/api/controllers/authController.ts
 touch services/identity-service/src/api/routes/users.ts
 ```
 
-### Controller Migration Example:
+**Important: Do NOT modify the original JavaScript files to import from TypeScript files.**
 
-**Before (JavaScript):**
+#### JavaScript File (Original - Remains Unchanged)
 ```javascript
-// 📄 src/api/controllers/authController.js
-const jwt = require('jsonwebtoken');                              // [1]
-const User = require('../../domain/models/User');                 // [2]
+// 📄 src/api/controllers/authController.js 
+const jwt = require('jsonwebtoken');
+const User = require('../../domain/models/User');
 
-exports.login = async (req, res) => {                            // [3]
-  try {
-    const { email, password } = req.body;                        // [4]
-    
-    const user = await User.findOne({ email });                  // [5]
-    if (!user) {
-      return res.status(401).json({ message: 'Invalid credentials' });
-    }
-    
-    const isMatch = await user.matchPassword(password);          // [6]
-    if (!isMatch) {
-      return res.status(401).json({ message: 'Invalid credentials' });
-    }
-    
-    const token = jwt.sign(                                      // [7]
-      { userId: user._id, email: user.email }, 
-      process.env.JWT_SECRET,
-      { expiresIn: '1h' }
-    );
-    
-    res.json({                                                   // [8]
-      token,
-      user: {
-        id: user._id,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName
-      }
-    });
-  } catch (err) {
-    console.error('Login error:', err);                          // [9]
-    res.status(500).json({ message: 'Server error' });
-  }
+exports.login = async (req, res) => {
+  // Original implementation
 };
 ```
 
-**After (TypeScript):**
+#### TypeScript File (New)
 ```typescript
 // 📄 src/api/controllers/authController.ts
-import { Request, Response } from 'express';                              // [1]
-import jwt from 'jsonwebtoken';                                           // [2]
-import User, { IUser } from '../../domain/models/User';                  // [3]
+import { Request, Response } from 'express';
+import jwt from 'jsonwebtoken';
+import User, { IUser } from '../../domain/models/User';
 
-interface LoginBody {                                                    // [4]
-  email: string;
-  password: string;
-}
-
-export const login = async (                                             // [5]
-  req: Request<{}, {}, LoginBody>,                                      // [6]
-  res: Response                                                         // [7]
-): Promise<void> => {                                                    // [8]
-  try {
-    const { email, password } = req.body;                               // [9]
-    
-    const user = await User.findOne({ email });                         // [10]
-    if (!user) {
-      res.status(401).json({ message: 'Invalid credentials' });
-      return;                                                           // [11]
-    }
-    
-    const isMatch = await user.matchPassword(password);                 // [12]
-    if (!isMatch) {
-      res.status(401).json({ message: 'Invalid credentials' });
-      return;                                                           // [13]
-    }
-    
-    const token = jwt.sign(                                             // [14]
-      { userId: user._id, email: user.email }, 
-      process.env.JWT_SECRET!,                                         // [15]
-      { expiresIn: '1h' }
-    );
-    
-    res.json({                                                          // [16]
-      token,
-      user: {
-        id: user._id,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName
-      }
-    });
-  } catch (error) {                                                     // [17]
-    console.error('Login error:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
+export const login = async (
+  req: Request<{}, {}, { email: string; password: string }>,
+  res: Response
+): Promise<void> => {
+  // TypeScript implementation
 };
 ```
 
-**What Changed & TypeScript Syntax Explained:**
+### 1.5.4 Configure Build Pipeline
 
-**[1-3] Import Statements:**
-- JavaScript: `const jwt = require('jsonwebtoken');`
-- TypeScript: 
-  ```typescript
-  import { Request, Response } from 'express';
-  import jwt from 'jsonwebtoken';
-  import User, { IUser } from '../../domain/models/User';
-  ```
-- **What's improved**: 
-  - ES module syntax
-  - Express types (Request, Response) imported
-  - TypeScript interface IUser imported from User model
+Ensure your TypeScript compilation pipeline works correctly:
 
-**[4] Request Type Interface:**
-- New in TypeScript: `interface LoginBody { email: string; password: string; }`
-- **What it means**:
-  - Defines the expected structure of login request body
-  - Provides type safety for request data
-  - Improves code documentation
-
-**[5-8] Function Declaration:**
-- JavaScript: `exports.login = async (req, res) => {`
-- TypeScript: 
-  ```typescript
-  export const login = async (
-    req: Request<{}, {}, LoginBody>,
-    res: Response
-  ): Promise<void> => {
-  ```
-- **What's improved**:
-  - ES module export syntax
-  - Generic Request type with params, response body, request body
-  - Return type specified as Promise<void>
-
-**[9-10] Request Handling:**
-- Same logic but with TypeScript-verified types
-- **What's checked**:
-  - `email` and `password` are confirmed to be strings
-  - TypeScript knows `User.findOne()` returns Promise<IUser | null>
-
-**[11, 13] Early Returns:**
-- JavaScript: `return res.status(401)...`
-- TypeScript: 
-  ```typescript
-  res.status(401)...
-  return;
-  ```
-- **What's improved**:
-  - Better style for void functions (send response, then return)
-  - TypeScript understands the control flow
-
-**[15] Non-null Assertion:**
-- New in TypeScript: `process.env.JWT_SECRET!`
-- **What it means**:
-  - The `!` tells TypeScript to trust that JWT_SECRET exists
-  - Avoids TypeScript error about potentially undefined value
-  - Better alternative would be environment variable validation
-
-**[17] Error Handling:**
-- JavaScript: `catch (err)`
-- TypeScript: `catch (error)`
-- **What's improved**:
-  - More consistent naming (error vs err)
-  - TypeScript understands error object type
-
-### Step-by-Step Migration Process
-
-Here's the detailed process for migrating a controller file:
-
-1. **Update import in the JavaScript file first**:
-   ```javascript
-   // Old
-   const User = require('../../domain/models/User');
-   
-   // New - update this FIRST while keeping the file as .js
-   const User = require('../../domain/models/User.ts'); 
-   ```
-
-2. **Test that the application still works** with the updated import
-
-3. **Create the parallel TypeScript file**:
+1. **Compile TypeScript to JavaScript**
    ```bash
-   # Create the TypeScript file alongside the JavaScript file
-   touch src/api/controllers/authController.ts
+   npm run build
    ```
+   - This transpiles your `.ts` files to `.js` files in the `dist/` directory
+   - The compiled files use CommonJS format for compatibility
 
-4. **Implement the TypeScript version** with proper types and ES module syntax
-
-5. **Update the import in other files that use the controller**:
-   ```javascript
-   // In routes file (e.g., src/api/routes/auth.js)
-   // Old
-   const { login } = require('../controllers/authController');
-   
-   // New
-   import { login } from '../controllers/authController';
-   ```
-
-6. **Test thoroughly** to ensure both versions work correctly
-
-7. **Remove the JavaScript file** once all imports are updated and tests pass:
+2. **Use the compiled output for production**
    ```bash
-   git rm src/api/controllers/authController.js
+   npm start
    ```
+   - This runs `node dist/index.js`
+   - Node resolves imports correctly from compiled files
 
-### Migration Best Practices for Controllers
-
-When migrating controller files:
-
-1. **Define request/response interfaces**:
-   ```typescript
-   interface CreateUserRequest {
-     email: string;
-     password: string;
-     firstName: string;
-     lastName: string;
-   }
-   
-   interface UserResponse {
-     id: string;
-     email: string;
-     firstName: string;
-     lastName: string;
-   }
+3. **For development, use ts-node**
+   ```bash
+   npm run dev
    ```
+   - This runs your TypeScript files directly with ts-node
+   - No separate compilation step needed during development
 
-2. **Use Express Generic Types**:
-   ```typescript
-   // Request<Params, ResBody, ReqBody, Query>
-   req: Request<{}, UserResponse, CreateUserRequest, {}>
-   ```
+### 1.5.5 Test Both Implementations
 
-3. **Return Promise<void> for async controllers**:
-   ```typescript
-   async function controllerFunction(req: Request, res: Response): Promise<void> {
-     // Implementation
-   }
-   ```
+It's crucial to test both the JavaScript and TypeScript implementations during migration:
 
-4. **Handle authentication properly**:
-   ```typescript
-   // Define a custom request with user property
-   interface AuthRequest extends Request {
-     user?: {
-       userId: string;
-       email: string;
-     };
-   }
-   
-   // Use this type in protected routes
-   function protectedRoute(req: AuthRequest, res: Response): void {
-     if (!req.user) {
-       res.status(401).json({ message: 'Unauthorized' });
-       return;
-     }
-     
-     // Access user data safely
-     const { userId } = req.user;
-   }
-   ```
+1. **Test the original JavaScript implementation**
+   - Ensures your baseline functionality works
+   - Acts as a reference for correct behavior
 
-#### 5. Remove JavaScript Version
+2. **Test the TypeScript implementation**
+   - Validates that TypeScript types are correct
+   - Confirms the build process works properly
+   - Verifies runtime behavior matches the JavaScript version
 
-Once you've confirmed everything works:
+### 1.5.6 Phase Out JavaScript Files
+
+Only after confirming that the TypeScript implementation works correctly:
+
 ```bash
+# Remove the JavaScript file
+git rm services/identity-service/src/api/controllers/authController.js
+git commit -m "chore(identity): Remove JavaScript auth controller after TypeScript migration"
+```
+
+### 1.5.7 Update References in Other Files
+
+When migrating routes or other files that import controllers:
+
+1. **First, create the TypeScript version of the importing file**
+   ```typescript
+   // In new routes/auth.ts file
+   import { Router } from 'express';
+   import { login, register } from '../controllers/authController';
+   
+   const router = Router();
+   router.post('/login', login);
+   router.post('/register', register);
+   
+   export default router;
+   ```
+
+2. **Ensure references are updated to use ES module syntax**
+   - TypeScript files use `import/export`
+   - JavaScript files continue to use `require/exports`
+
+3. **Only remove the JavaScript version after all TypeScript files are tested**
+
+## 1.11 File Transition Strategy (Updated)
+
+When migrating a file from JavaScript to TypeScript, follow this parallel files approach:
+
+### Stage 1: Implementation
+
+1. **Create a new TypeScript file alongside the existing JavaScript file**
+   ```bash
+   # Example: User model
+   touch services/identity-service/src/domain/models/User.ts
+   ```
+
+2. **Implement the TypeScript version with proper typing**
+   ```typescript
+   // User.ts
+   import mongoose, { Document, Schema } from 'mongoose';
+   
+   export interface IUser extends Document {
+     email: string;
+     // other properties...
+   }
+   
+   const UserSchema = new Schema<IUser>({
+     // schema definition...
+   });
+   
+   export default mongoose.model<IUser>('User', UserSchema);
+   ```
+
+3. **Keep the JavaScript version unchanged**
+   ```javascript
+   // User.js - unchanged
+   const mongoose = require('mongoose');
+   
+   const UserSchema = new mongoose.Schema({
+     // schema definition...
+   });
+   
+   module.exports = mongoose.model('User', UserSchema);
+   ```
+
+4. **Configure your build process**
+   - Make sure TypeScript compiles to a separate directory (`dist/`)
+   - JavaScript imports will still work from original files
+   - TypeScript imports will use the new files
+
+### Stage 2: Testing
+
+1. **Test the TypeScript implementation**
+   ```bash
+   # Run TypeScript directly for testing
+   npx ts-node src/path/to/test/file.ts
+   
+   # Or run the build process and test compiled output
+   npm run build
+   node dist/path/to/test/file.js
+   ```
+
+2. **Verify behavior matches the JavaScript version**
+   - Ensure the same functionality
+   - Check for any type-related issues
+   - Test edge cases
+
+### Stage 3: Replacement
+
+1. **Create TypeScript versions of files that import this model**
+   - Follow the same parallel approach
+   - Use proper ES module imports in TypeScript files
+
+2. **Remove the JavaScript file once all dependencies are updated**
+   ```bash
+   git rm services/identity-service/src/domain/models/User.js
+   git commit -m "chore(identity): Remove JavaScript User model after TypeScript migration"
+   ```
+
+### Git Workflow for File Migration
+
+```bash
+# First commit the new TypeScript file
+git add services/identity-service/src/domain/models/User.ts
+git commit -m "feat(identity): Add TypeScript version of User model"
+
+# After testing and confirming it works, remove the JS file
 git rm services/identity-service/src/domain/models/User.js
 git commit -m "chore(identity): Remove JavaScript User model after TypeScript migration"
 ```
 
-#### 6. Document Your Progress
+### Handling Migration Rollbacks for Individual Files
 
-Update your migration tracking document to mark this model as complete.
+If issues arise with a specific migrated file:
 
-#### 7. Choose Your Next Models
+1. Revert to the JavaScript version temporarily:
+   ```bash
+   git checkout HEAD~1 -- services/identity-service/src/domain/models/User.js
+   ```
 
-Look for related models that interact with the User model, such as:
-- Profile model
-- Authentication-related models
-- Any models referenced by the User model
+2. Fix issues in the TypeScript file
+   
+3. Test and commit again:
+   ```bash
+   git add services/identity-service/src/domain/models/User.ts
+   git commit -m "fix(identity): Fix TypeScript User model implementation"
+   ```
 
-These related models are good candidates for your next migration targets since you already have the User model as a reference.
+## Key Success Factors for TypeScript Migration
 
-#### 8. Configure TypeScript for the Service
+1. **Incremental approach** - Migrate one file at a time
+2. **Parallel implementations** - Keep JavaScript working while adding TypeScript
+3. **Consistent module systems** - Don't mix import styles in the same file
+4. **Thorough testing** - Test both versions before removing JavaScript
+5. **Build pipeline configuration** - Ensure proper compilation and resolution
 
-If you haven't already, ensure you have proper TypeScript configuration in your identity service:
-- Verify tsconfig.json settings
-- Set up build scripts
-- Configure linting rules
+This approach provides a clear migration path with minimal risk and maximum reliability.
 
 ### 1.6 Migrate Auth Middleware
 
