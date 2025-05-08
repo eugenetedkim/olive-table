@@ -784,6 +784,14 @@ While it does require an extra step, this methodical approach significantly redu
 
 #### 3. Test Your Changes After Import Updates
 
+After replacing the JavaScript User model with a TypeScript version and updating the imports in related files, it's crucial to test the entire system. This step validates that the TypeScript model correctly integrates with the remaining JavaScript files and that the application as a whole continues to function properly, even though we've only changed the model file and its imports.
+
+Testing at this point is important because:
+1. It validates that your TypeScript implementation of the User model is functionally equivalent to the JavaScript version
+2. It confirms that the import changes are working correctly before investing time in migrating more files
+3. It provides early detection of any type compatibility issues between TypeScript and JavaScript files
+4. It ensures the critical authentication functionality (which depends on the User model) remains intact
+
 ##### 3.1 Set Up the Docker Environment for Testing
 
 Before running the test commands, you need to get the Docker environment up and running with all services:
