@@ -879,121 +879,7 @@ When migrating routes or other files that import controllers:
 
 3. **Only remove the JavaScript version after all TypeScript files are tested**
 
-## 1.11 File Transition Strategy (Updated)
-
-When migrating a file from JavaScript to TypeScript, follow this parallel files approach:
-
-### Stage 1: Implementation
-
-1. **Create a new TypeScript file alongside the existing JavaScript file**
-   ```bash
-   # Example: User model
-   touch services/identity-service/src/domain/models/User.ts
-   ```
-
-2. **Implement the TypeScript version with proper typing**
-   ```typescript
-   // User.ts
-   import mongoose, { Document, Schema } from 'mongoose';
-   
-   export interface IUser extends Document {
-     email: string;
-     // other properties...
-   }
-   
-   const UserSchema = new Schema<IUser>({
-     // schema definition...
-   });
-   
-   export default mongoose.model<IUser>('User', UserSchema);
-   ```
-
-3. **Keep the JavaScript version unchanged**
-   ```javascript
-   // User.js - unchanged
-   const mongoose = require('mongoose');
-   
-   const UserSchema = new mongoose.Schema({
-     // schema definition...
-   });
-   
-   module.exports = mongoose.model('User', UserSchema);
-   ```
-
-4. **Configure your build process**
-   - Make sure TypeScript compiles to a separate directory (`dist/`)
-   - JavaScript imports will still work from original files
-   - TypeScript imports will use the new files
-
-### Stage 2: Testing
-
-1. **Test the TypeScript implementation**
-   ```bash
-   # Run TypeScript directly for testing
-   npx ts-node src/path/to/test/file.ts
-   
-   # Or run the build process and test compiled output
-   npm run build
-   node dist/path/to/test/file.js
-   ```
-
-2. **Verify behavior matches the JavaScript version**
-   - Ensure the same functionality
-   - Check for any type-related issues
-   - Test edge cases
-
-### Stage 3: Replacement
-
-1. **Create TypeScript versions of files that import this model**
-   - Follow the same parallel approach
-   - Use proper ES module imports in TypeScript files
-
-2. **Remove the JavaScript file once all dependencies are updated**
-   ```bash
-   git rm services/identity-service/src/domain/models/User.js
-   git commit -m "chore(identity): Remove JavaScript User model after TypeScript migration"
-   ```
-
-### Git Workflow for File Migration
-
-```bash
-# First commit the new TypeScript file
-git add services/identity-service/src/domain/models/User.ts
-git commit -m "feat(identity): Add TypeScript version of User model"
-
-# After testing and confirming it works, remove the JS file
-git rm services/identity-service/src/domain/models/User.js
-git commit -m "chore(identity): Remove JavaScript User model after TypeScript migration"
-```
-
-### Handling Migration Rollbacks for Individual Files
-
-If issues arise with a specific migrated file:
-
-1. Revert to the JavaScript version temporarily:
-   ```bash
-   git checkout HEAD~1 -- services/identity-service/src/domain/models/User.js
-   ```
-
-2. Fix issues in the TypeScript file
-   
-3. Test and commit again:
-   ```bash
-   git add services/identity-service/src/domain/models/User.ts
-   git commit -m "fix(identity): Fix TypeScript User model implementation"
-   ```
-
-## Key Success Factors for TypeScript Migration
-
-1. **Incremental approach** - Migrate one file at a time
-2. **Parallel implementations** - Keep JavaScript working while adding TypeScript
-3. **Consistent module systems** - Don't mix import styles in the same file
-4. **Thorough testing** - Test both versions before removing JavaScript
-5. **Build pipeline configuration** - Ensure proper compilation and resolution
-
-This approach provides a clear migration path with minimal risk and maximum reliability.
-
-### 1.6 Migrate Auth Middleware
+## 1.6 Migrate Auth Middleware
 
 **Before vs After:**
 ```javascript
@@ -1745,7 +1631,72 @@ If issues arise with a specific migrated file:
 
 This two-step approach gives you a clear migration path and provides a safety net during implementation.
 
-### 1.12 Testing Strategies
+### 1.12 Development and Production Workflows
+
+During the TypeScript migration process, it's important to understand both your development workflow and how production deployment will work.
+
+**Development Workflow**
+
+When migrating to TypeScript, you'll have two ways to run your application during development:
+
+1. **Running Original JavaScript Files**:
+   ```bash
+   # Run the original JavaScript files
+   node src/index.js
+   ```
+   - This runs the untouched JavaScript version
+   - Useful as a reference point during migration
+
+2. **Running TypeScript Files with ts-node**:
+   ```bash
+   # Run TypeScript files directly
+   npm run dev
+   ```
+   - Uses ts-node to run TypeScript without compilation
+   - Provides immediate feedback on type errors
+   - Restarts automatically when files change
+   - During migration, TypeScript files will import from other TypeScript files
+   - JavaScript files will continue to import from JavaScript files
+   - Great for active development and testing
+
+**Production Workflow**
+
+For production deployment, you'll use the compiled output:
+
+1. **Build TypeScript to JavaScript**:
+   ```bash
+   npm run build
+   ```
+   - Compiles all TypeScript files to JavaScript in the `dist` folder
+   - Converts ES Module imports to CommonJS for Node.js compatibility
+   - Type checking happens during this step
+
+2. **Run Compiled Code**:
+   ```bash
+   npm start
+   ```
+   - Runs the compiled JavaScript from the `dist` folder
+   - No TypeScript or source files needed in production
+   - Uses only the TypeScript-derived JavaScript files
+
+**Docker Production Deployment**
+
+When deploying with Docker, the multi-stage build handles this process:
+
+1. **Build Stage**:
+   - Installs all dependencies (including dev dependencies)
+   - Compiles TypeScript to JavaScript
+   - Runs linting and tests
+
+2. **Production Stage**:
+   - Uses a clean Node.js base image
+   - Installs only production dependencies
+   - Copies just the compiled JavaScript from the build stage
+   - Results in a smaller, more secure production image
+
+This approach ensures your production environment never needs to deal with TypeScript directly - it only runs the compiled JavaScript code, while still giving you all the benefits of TypeScript during development.
+
+### 1.13 Testing Strategies
 
 #### Unit Testing with Jest
 
@@ -1757,9 +1708,9 @@ module.exports = {
   testEnvironment: 'node',
   roots: ['<rootDir>/src'],
   transform: {
-    '^.+\\.tsx?$': 'ts-jest',
+    '^.+\\.tsx?: 'ts-jest',
   },
-  testRegex: '(/__tests__/.*|(\\.|/)(test|spec))\\.tsx?$',
+  testRegex: '(/__tests__/.*|(\\.|/)(test|spec))\\.tsx?,
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
   collectCoverage: true,
   coverageDirectory: './coverage',
@@ -1859,7 +1810,7 @@ describe('Auth Controller', () => {
 });
 ```
 
-### 1.13 Test the Conversion
+### 1.14 Test the Conversion
 
 **Testing Process Explained:**
 
@@ -1918,567 +1869,3 @@ curl http://localhost:3001/health
 - **Type conflicts**: Ensure you've installed all `@types/` packages
 - **Docker issues**: Make sure `dist/` folder exists after build
 - **Runtime errors**: Check for `any` types that might be hiding issues
-
-## Step 2: Event Service Migration
-
-*📚 Learning Note: Follow the same pattern as Identity Service with different model*
-
-### 2.1 Navigate to Event Service
-
-```bash
-cd ../event-service
-```
-
-### 2.2 Create TypeScript Config
-
-Copy the same `tsconfig.json` from Identity Service.
-
-### 2.3 Update package.json Scripts
-
-```json
-{
-  "scripts": {
-    "build": "tsc",
-    "start": "node dist/index.js",
-    "dev": "nodemon --exec ts-node src/index.ts",
-    "lint": "eslint . --ext .ts",
-    "test": "jest"
-  }
-}
-```
-
-### 2.4 Install Dependencies
-
-```bash
-npm install --save-dev typescript @types/node @types/express @types/mongoose @types/cors @types/helmet ts-node nodemon eslint @typescript-eslint/parser @typescript-eslint/eslint-plugin jest ts-jest @types/jest
-```
-
-### 2.5 Migrate Event Model
-
-**Before (JavaScript):**
-```javascript
-// 📄 src/domain/models/Event.js
-const mongoose = require('mongoose');
-
-const EventSchema = new mongoose.Schema({
-  title: { type: String, required: true },
-  // ... other fields
-});
-
-module.exports = mongoose.model('Event', EventSchema);
-```
-
-**After (TypeScript):**
-```typescript
-// 📄 src/domain/models/Event.ts
-import mongoose, { Document, Schema } from 'mongoose';
-
-export interface IEvent extends Document {
-  title: string;
-  description: string;
-  creatorId: string;
-  date: Date;
-  startTime: string;
-  endTime: string;
-  location: string;
-  visibility: 'public' | 'friends-only' | 'invite-only';
-  dietaryOptions: string[];
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-const EventSchema = new Schema<IEvent>({
-  title: {
-    type: String,
-    required: true,
-    trim: true
-  },
-  description: {
-    type: String,
-    required: true
-  },
-  creatorId: {
-    type: String,
-    required: true
-  },
-  date: {
-    type: Date,
-    required: true
-  },
-  startTime: {
-    type: String,
-    required: true
-  },
-  endTime: {
-    type: String,
-    required: true
-  },
-  location: {
-    type: String,
-    required: true
-  },
-  visibility: {
-    type: String,
-    enum: ['public', 'friends-only', 'invite-only'],
-    default: 'friends-only'
-  },
-  dietaryOptions: {
-    type: [String],
-    default: []
-  }
-}, {
-  timestamps: true
-});
-
-export default mongoose.model<IEvent>('Event', EventSchema);
-```
-
-### 2.6 Migrate Event Controller
-
-**Before (JavaScript):**
-```javascript
-// 📄 src/api/controllers/eventController.js
-const Event = require('../../domain/models/Event');
-
-exports.createEvent = async (req, res) => {
-  // JavaScript implementation
-};
-```
-
-**After (TypeScript):**
-```typescript
-// 📄 src/api/controllers/eventController.ts
-import { Request, Response } from 'express';
-import Event, { IEvent } from '../../domain/models/Event';
-
-interface CustomRequest extends Request {
-  user?: {
-    userId: string;
-    email: string;
-  };
-}
-
-interface EventBody {
-  title: string;
-  description: string;
-  date: string | Date;
-  startTime: string;
-  endTime: string;
-  location: string;
-  visibility?: 'public' | 'friends-only' | 'invite-only';
-  dietaryOptions?: string[];
-}
-
-export const createEvent = async (req: CustomRequest, res: Response): Promise<void> => {
-  try {
-    if (!req.user?.userId) {
-      res.status(401).json({ message: 'Unauthorized' });
-      return;
-    }
-
-    const eventData: EventBody = req.body;
-    
-    const event = new Event({
-      ...eventData,
-      creatorId: req.user.userId,
-      date: new Date(eventData.date)
-    });
-
-    await event.save();
-    res.status(201).json(event);
-  } catch (error) {
-    console.error('Error creating event:', error);
-    res.status(500).json({ message: 'Error creating event' });
-  }
-};
-```
-
-### 2.7 Update Dockerfile
-
-Use the same multi-stage Dockerfile pattern as Identity Service, just change the port to 3002.
-
-## Step 3: Invitation Service Migration
-
-*📚 Learning Note: Uses the same pattern as previous services*
-
-### 3.1 Navigate to Invitation Service
-
-```bash
-cd ../invitation-service
-```
-
-### 3.2 Migrate Invitation Model
-
-**After (TypeScript):**
-```typescript
-// 📄 src/domain/models/Invitation.ts
-import mongoose, { Document, Schema } from 'mongoose';
-
-export interface IInvitation extends Document {
-  eventId: string;
-  inviteeId: string;
-  inviterId: string;
-  status: 'pending' | 'accepted' | 'declined';
-  rsvpDate?: Date;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-const InvitationSchema = new Schema<IInvitation>({
-  eventId: {
-    type: String,
-    required: true
-  },
-  inviteeId: {
-    type: String,
-    required: true
-  },
-  inviterId: {
-    type: String,
-    required: true
-  },
-  status: {
-    type: String,
-    enum: ['pending', 'accepted', 'declined'],
-    default: 'pending'
-  },
-  rsvpDate: {
-    type: Date
-  }
-}, {
-  timestamps: true
-});
-
-export default mongoose.model<IInvitation>('Invitation', InvitationSchema);
-```
-
-## Step 4: API Gateway Migration
-
-*📚 Learning Note: API Gateway is last because it only routes traffic - no database*
-
-### 4.1 Migrate Auth Middleware
-
-**After (TypeScript):**
-```typescript
-// 📄 src/middleware/auth.ts
-import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
-
-declare global {
-  namespace Express {
-    interface Request {
-      user?: {
-        userId: string;
-        email: string;
-      };
-    }
-  }
-}
-
-export const authMiddleware = (req: Request, res: Response, next: NextFunction): void => {
-  try {
-    const authHeader = req.headers.authorization;
-    
-    if (!authHeader?.startsWith('Bearer ')) {
-      res.status(401).json({ message: 'No token provided' });
-      return;
-    }
-
-    const token = authHeader.split(' ')[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
-      userId: string;
-      email: string;
-    };
-    
-    req.user = decoded;
-    next();
-  } catch (error) {
-    res.status(401).json({ message: 'Invalid token' });
-  }
-};
-```
-
-### 4.2 Migrate Main Application
-
-**After (TypeScript):**
-```typescript
-// 📄 src/index.ts
-import express from 'express';
-import { createProxyMiddleware } from 'http-proxy-middleware';
-import { authMiddleware } from './middleware/auth';
-import { config } from 'dotenv';
-
-// Load environment variables
-config();
-
-const app = express();
-const PORT: number = parseInt(process.env.PORT || '3000', 10);
-
-// Public routes (no auth required)
-app.use('/api/auth', createProxyMiddleware({
-  target: process.env.IDENTITY_SERVICE_URL || 'http://localhost:3001',
-  changeOrigin: true
-}));
-
-// Health check endpoint
-app.get('/health', (req, res) => {
-  res.json({ status: 'healthy' });
-});
-
-// Protected routes (auth required)
-app.use('/api/events', authMiddleware, createProxyMiddleware({
-  target: process.env.EVENT_SERVICE_URL || 'http://localhost:3002',
-  changeOrigin: true
-}));
-
-app.use('/api/invitations', authMiddleware, createProxyMiddleware({
-  target: process.env.INVITATION_SERVICE_URL || 'http://localhost:3003',
-  changeOrigin: true
-}));
-
-// Start the server
-app.listen(PORT, () => {
-  console.log(`API Gateway running on port ${PORT}`);
-});
-
-export default app;
-```
-
-## Step 5: Final Integration
-
-### 5.1 Update docker-compose.yml
-
-```yaml
-version: '3.8'
-
-services:
-  mongodb:
-    image: mongo:5.0
-    ports:
-      - "27017:27017"
-    volumes:
-      - mongo-data:/data/db
-    healthcheck:
-      test: echo 'db.runCommand("ping").ok' | mongo localhost:27017/test --quiet
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - olive-network
-
-  identity-service:
-    build:
-      context: ./services/identity-service
-    environment:
-      - PORT=3001
-      - MONGO_URI=mongodb://mongodb:27017/identity
-      - JWT_SECRET=your_jwt_secret
-    ports:
-      - "3001:3001"
-    depends_on:
-      mongodb:
-        condition: service_healthy
-    networks:
-      - olive-network
-
-  event-service:
-    build:
-      context: ./services/event-service
-    environment:
-      - PORT=3002
-      - MONGO_URI=mongodb://mongodb:27017/events
-      - JWT_SECRET=your_jwt_secret
-    ports:
-      - "3002:3002"
-    depends_on:
-      mongodb:
-        condition: service_healthy
-    networks:
-      - olive-network
-
-  invitation-service:
-    build:
-      context: ./services/invitation-service
-    environment:
-      - PORT=3003
-      - MONGO_URI=mongodb://mongodb:27017/invitations
-      - JWT_SECRET=your_jwt_secret
-    ports:
-      - "3003:3003"
-    depends_on:
-      mongodb:
-        condition: service_healthy
-    networks:
-      - olive-network
-
-  api-gateway:
-    build:
-      context: ./services/api-gateway
-    environment:
-      - PORT=3000
-      - IDENTITY_SERVICE_URL=http://identity-service:3001
-      - EVENT_SERVICE_URL=http://event-service:3002
-      - INVITATION_SERVICE_URL=http://invitation-service:3003
-      - JWT_SECRET=your_jwt_secret
-    ports:
-      - "3000:3000"
-    depends_on:
-      - identity-service
-      - event-service
-      - invitation-service
-    networks:
-      - olive-network
-
-networks:
-  olive-network:
-    driver: bridge
-
-volumes:
-  mongo-data:
-```
-
-### 5.2 Test Everything
-
-```bash
-# From root directory
-docker-compose down
-docker-compose build
-docker-compose up
-
-# In a new terminal, run integration tests
-chmod +x test-integration.sh
-./test-integration.sh
-```
-
-## 📝 Performance Considerations
-
-When migrating to TypeScript, be aware of these performance implications:
-
-### 1. Build Time Performance
-
-TypeScript compilation adds an additional build step, which can impact development speed in large projects:
-
-- **Problem**: Slow builds in large projects
-- **Solution**: 
-  - Use `tsc --incremental` for incremental builds
-  - Configure `tsconfig.json` with `"incremental": true`
-  - Consider using `ts-node-dev` instead of `ts-node` for faster restarts
-  - For very large projects, consider using Webpack or other bundlers with parallel compilation
-
-### 2. Memory Usage
-
-TypeScript's type checking can be memory intensive:
-
-- **Problem**: High memory usage during compilation
-- **Solution**:
-  - Split large projects into smaller packages/modules
-  - Use `"skipLibCheck": true` in tsconfig.json
-  - Consider using project references for large monorepos
-
-### 3. Runtime Performance
-
-TypeScript itself has no runtime impact since it compiles to JavaScript:
-
-- **Misconception**: TypeScript makes runtime slower
-- **Reality**: Compiled TypeScript code has the same performance as equivalent JavaScript code
-- **Benefit**: Type safety often helps improve runtime performance by catching bugs early
-
-## 📊 Versioning Strategy
-
-After completing the TypeScript migration, it's time to plan for future versioning:
-
-### 1. Semantic Versioning
-
-Follow semantic versioning (SemVer) for your project:
-
-```
-MAJOR.MINOR.PATCH
-```
-
-- **MAJOR**: Incompatible API changes (e.g., TypeScript migration warrants a major version bump)
-- **MINOR**: Backward-compatible functionality additions
-- **PATCH**: Backward-compatible bug fixes
-
-### 2. Version Bump After Migration
-
-After completing the migration, create a new major version tag:
-
-```bash
-# Create the new tag
-git tag -a v2.0.0-typescript-complete -m "Complete TypeScript migration"
-
-# Push the tag
-git push origin v2.0.0-typescript-complete
-```
-
-### 3. Changelog Updates
-
-Create a CHANGELOG.md file or update an existing one with migration details:
-
-```markdown
-# Changelog
-
-## [2.0.0] - 2023-XX-XX
-
-### Changed
-- Migrated entire codebase from JavaScript to TypeScript
-- Updated all services with proper type definitions
-- Improved error handling with typed errors
-- Enhanced Docker setup with multi-stage builds
-- Added comprehensive testing with Jest
-
-### Added
-- Type definitions for all models
-- Interface contracts for API endpoints
-- Type-safe middleware
-```
-
-## ✅ Migration Complete!
-
-**What You've Achieved:**
-- ✨ Type-safe codebase
-- 🛡️ Compile-time error checking
-- 📚 Better documentation through types
-- 🔄 Maintainable microservices
-- 🐳 Production-ready Docker setup
-- 🧪 Improved testing capability
-
-## 🆘 Catastrophic Recovery
-
-If migration fails catastrophically:
-
-```bash
-# Complete rollback to JavaScript baseline
-git reset --hard v1.0.0-docker-baseline
-
-# Or create recovery branch
-git checkout -b recovery-js v1.0.0-docker-baseline
-
-# Clean Docker environment
-docker-compose down -v --rmi all
-docker-compose up --build
-```
-
-## 📈 Example Git Commit History
-
-Here's an example of a well-structured commit history for this migration:
-
-```
-* a7f2d31 (HEAD -> main, tag: v2.0.0-typescript-complete) docs: Update README with TypeScript instructions
-* 9e5c2f0 chore: Clean up post-migration
-* 8c73b12 test: Add integration tests for full TypeScript stack
-* 3b21e7a feat(api-gateway): Migrate API Gateway to TypeScript
-* d952f8d feat(invitation): Migrate Invitation Service to TypeScript
-* b6a710a feat(event): Migrate Event Service controllers to TypeScript
-* 4f9231e feat(event): Migrate Event model to TypeScript
-* 7e3c1d9 feat(identity): Remove JS versions after successful TypeScript migration
-* 2c53a90 test(identity): Add tests for TypeScript models
-* 1c48b3e feat(identity): Migrate Auth controller to TypeScript
-* e8a6f42 feat(identity): Migrate User model to TypeScript
-* a9f36b2 chore(identity): Set up TypeScript configuration
-* f5d8e9c chore: Update Docker configuration
-* 3e47d5a docs: Add TypeScript migration plan
-* 2b9d7a1 (tag: v1.0.0-docker-baseline) Initial JavaScript version
-```
-
-This structured approach ensures a clean, trackable migration process that aligns with professional development practices.
