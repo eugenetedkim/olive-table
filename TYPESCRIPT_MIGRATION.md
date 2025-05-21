@@ -1101,53 +1101,99 @@ touch services/identity-service/src/api/routes/auth.ts
 **Before vs After:**
 ```javascript
 // 📄 src/api/middleware/auth.js (BEFORE)
-const jwt = require('jsonwebtoken');                                  // [1]
+const jwt = require('jsonwebtoken');                                      // [1][2]
 
-exports.authMiddleware = (req, res, next) => {                       // [2]
-  // JavaScript implementation - no type safety                       // [3]
+// No interface definition in JavaScript                                  // [3][4][5][6]
+
+exports.authMiddleware = (req, res, next) => {                           // [7][8][9][10][11]
+  try {
+    // JavaScript uses req.header() method with replace()                 // [12]
+    const token = req.header('Authorization')?.replace('Bearer ', '');
+
+    // No separate format check, just checks if token exists              // [13]
+    if (!token) {
+      return res.status(401).json({ message: 'No token, authorization denied' }); // [14]
+    }
+
+    // No separate JWT secret validation                                  // [16][17]
+    
+    // Decode JWT without type assertion                                  // [18]
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    // Set user property without type safety                              // [19]
+    req.user = decoded.user;
+    next();
+  } catch (err) {                                                        // [20]
+    // Simple error handling without specific JWT error types             // [21]
+    res.status(401).json({ message: 'Token is not valid' });
+  }
 };
 ```
 
 ```typescript
 // 📄 src/api/middleware/auth.ts (AFTER)
-import { Request, Response, NextFunction } from 'express';           // [1]
-import jwt from 'jsonwebtoken';                                      // [2]
+import { Request, Response, NextFunction } from 'express';                // [1]
+import jwt from 'jsonwebtoken';                                           // [2]
 
-export interface CustomRequest extends Request {                     // [3]
-  user?: {                                                          // [4]
-    userId: string;
-    email: string;
-  };
+// Define JWT payload shape with modern naming convention
+interface JwtPayload {                                                    // [3]
+  userId: string;                                                        // [4]
+  email: string;
 }
 
-export const authMiddleware = (                                      // [5]
-  req: CustomRequest,                                               // [6]
-  res: Response,                                                    // [7]
-  next: NextFunction                                                // [8]
-): void => {                                                        // [9]
+// Extend Request to include our user property
+export interface AuthenticatedRequest extends Request {                   // [5]
+  user?: JwtPayload;                                                     // [6]
+}
+
+export const authMiddleware = (                                           // [7]
+  req: AuthenticatedRequest,                                             // [8]
+  res: Response,                                                         // [9]
+  next: NextFunction                                                     // [10]
+): void => {                                                             // [11]
   try {
-    const authHeader = req.headers.authorization;                    // [10]
+    // TypeScript uses direct headers object access                       // [12]
+    const authHeader = req.headers.authorization;
     
-    if (!authHeader?.startsWith('Bearer ')) {                       // [11]
-      res.status(401).json({ message: 'No token provided' });
-      return;                                                       // [12]
+    // Explicit format check with optional chaining                       // [13]
+    if (!authHeader?.startsWith('Bearer ')) {
+      res.status(401).json({ message: 'Invalid authorization format' });
+      return;                                                            // [14]
     }
 
-    const token = authHeader.split(' ')[1];                         // [13]
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {  // [14]
-      userId: string;
-      email: string;
-    };
+    // Explicit token extraction with substring                           // [15]
+    const token = authHeader.substring(7);
     
-    req.user = decoded;                                             // [15]
+    // Explicit JWT secret validation                                     // [16]
+    const jwtSecret = process.env.JWT_SECRET;
+    
+    if (!jwtSecret) {                                                    // [17]
+      console.error('JWT_SECRET environment variable not set');
+      res.status(500).json({ message: 'Server configuration error' });
+      return;
+    }
+    
+    // Type assertion for decoded JWT                                     // [18]
+    const decoded = jwt.verify(token, jwtSecret) as JwtPayload;
+    
+    // Type-safe assignment to req.user                                   // [19]
+    req.user = decoded;
     next();
-  } catch (error) {
-    res.status(401).json({ message: 'Invalid token' });
+  } catch (error) {                                                      // [20]
+    // Specific handling for different JWT error types                    // [21]
+    if (error instanceof jwt.TokenExpiredError) {
+      res.status(401).json({ message: 'Token expired' });
+    } else if (error instanceof jwt.JsonWebTokenError) {
+      res.status(401).json({ message: 'Invalid token' });
+    } else {
+      console.error('Auth error:', error instanceof Error ? error.message : 'Unknown error');
+      res.status(401).json({ message: 'Authentication failed' });
+    }
   }
 };
 ```
 
-**What Changed & TypeScript Syntax Explained:**
+**What Changed & TypeScript Syntax Explained**:
 
 **[1] Import Types:**
 - JavaScript: No type imports needed
@@ -1159,121 +1205,138 @@ export const authMiddleware = (                                      // [5]
   - `NextFunction`: Function to pass control to next middleware
   - Enables type checking for middleware parameters
 
-**[2] Default Import:**
+**[2] Module Import:**
 - JavaScript: `const jwt = require('jsonwebtoken');`
 - TypeScript: `import jwt from 'jsonwebtoken';`
-- **What changed**: ES6 import syntax
+- **What changed**: ES6 import syntax instead of CommonJS require
 - **Why**: Consistent with TypeScript module system
 
-**[3] Interface Extension:**
-- New: `export interface CustomRequest extends Request`
+**[3-4] JWT Payload Definition:**
+- JavaScript: No explicit type definition
+- TypeScript: `interface JwtPayload { userId: string; email: string; }`
 - **What it means**:
-  - Creates a new type that extends Express Request
-  - Adds our custom `user` property
-  - TypeScript now knows `req.user` exists
-  - Prevents "property does not exist" errors
+  - Defines the structure of JWT token payloads
+  - Makes token contents self-documenting
+  - Enables TypeScript to validate token usage
+  - Uses modern naming convention (no "I" prefix)
 
-**[4] Optional Property:**
-- New: `user?: { userId: string; email: string; };`
-- **What `?` means**:
-  - Property might not exist (undefined)
-  - Must check `if (req.user)` before using
-  - TypeScript enforces this check
+**[5-6] Request Extension:**
+- JavaScript: No explicit interface, relies on dynamic property
+- TypeScript: `export interface AuthenticatedRequest extends Request { user?: JwtPayload; }`
+- **What's improved**:
+  - Explicitly extends Express Request type
+  - Defines shape of user property (JwtPayload)
+  - Makes property optional with `?` to indicate it might not exist
+  - Exported so other files can use the enhanced request type
 
-**[5] Export Syntax:**
+**[7] Export Syntax:**
 - JavaScript: `exports.authMiddleware = (`
 - TypeScript: `export const authMiddleware = (`
-- **What changed**: ES6 export syntax
-- **Why**: Consistent with TypeScript modules
+- **What changed**: ES6 named export instead of CommonJS exports
+- **Why**: Consistent with modern JavaScript modules
 
-**[6] Typed Request Parameter:**
-- JavaScript: `req` (no type)
-- TypeScript: `req: CustomRequest`
-- **What it means**:
-  - `req` must be our CustomRequest type
-  - TypeScript knows about `req.user` property
-  - Prevents accessing non-existent properties
+**[8-10] Typed Parameters:**
+- JavaScript: `(req, res, next)` (no types)
+- TypeScript: `(req: AuthenticatedRequest, res: Response, next: NextFunction)`
+- **What's improved**:
+  - Each parameter has an explicit type
+  - TypeScript knows what methods and properties exist
+  - Prevents runtime errors from invalid usage
+  - Better autocompletion and documentation
 
-**[7] Response Type:**
-- JavaScript: `res` (no type)
-- TypeScript: `res: Response`
-- **What it means**:
-  - TypeScript knows all Response methods
-  - Autocomplete for `res.status()`, `res.json()`, etc.
-  - Prevents calling non-existent methods
-
-**[8] Next Function Type:**
-- JavaScript: `next` (no type)
-- TypeScript: `next: NextFunction`
-- **What it means**:
-  - Ensures `next()` is called correctly
-  - No parameters or proper error passing
-
-**[9] Return Type:**
-- New: `: void`
+**[11] Return Type:**
+- JavaScript: No explicit return type
+- TypeScript: `: void`
 - **What it means**:
   - Function doesn't return a value
+  - TypeScript verifies no accidental returns
   - Middleware functions typically return void
-  - TypeScript checks no value is returned
 
-**[10] Optional Chaining:**
-- New: `req.headers.authorization`
-- **What it checks**:
-  - TypeScript knows headers might have authorization
-  - Prevents undefined access errors
+**[12] Header Access:**
+- JavaScript: `const token = req.header('Authorization')?.replace('Bearer ', '');`
+- TypeScript: `const authHeader = req.headers.authorization;`
+- **What changed**:
+  - Direct access to headers object instead of helper method
+  - Split token extraction into multiple steps for clarity
+  - More explicit control flow
 
-**[11] Optional Chaining & nullish:**
-- New: `if (!authHeader?.startsWith('Bearer '))`
-- **What `?.` means**:
-  - Safe property access
-  - If `authHeader` is null/undefined, expression returns undefined
-  - Prevents "Cannot read property of undefined" errors
+**[13] Authorization Format Check:**
+- JavaScript: Implicitly checks via token extraction
+- TypeScript: `if (!authHeader?.startsWith('Bearer '))`
+- **What's improved**:
+  - Explicit validation of token format
+  - Uses optional chaining (`?.`) to handle null/undefined
+  - Clearer error message specific to format issues
 
-**[12] Early Return:**
-- Same in both, but TypeScript tracks control flow
-- **What it does**:
-  - Exits function early
-  - TypeScript knows execution stops here
+**[14] Early Returns:**
+- JavaScript: Uses `return` with response
+- TypeScript: Sends response then uses `return` statement
+- **What's changed**: Style preference but same functionality
+- **Why**: Some teams prefer separating the response and return steps
 
-**[13] String Splitting:**
-- Same logic, TypeScript knows string methods
-- **What it provides**:
-  - Autocomplete for string methods
-  - Type checking on array access
+**[15] Token Extraction:**
+- JavaScript: Uses `replace('Bearer ', '')`
+- TypeScript: Uses `substring(7)` (length of 'Bearer ')
+- **What's improved**:
+  - More explicit extraction method
+  - More performant (no regex)
+  - Clear about what's happening
 
-**[14] Type Assertion:**
-- New: `jwt.verify(...) as { userId: string; email: string; };`
-- **What `as` means**:
-  - Tells TypeScript the shape of decoded JWT
-  - `jwt.verify` returns `unknown` by default
-  - We assert it's our expected shape
-  - `!` after `JWT_SECRET` is non-null assertion
+**[16-17] JWT Secret Validation:**
+- JavaScript: No explicit validation
+- TypeScript: Separate validation step for JWT secret
+- **What's improved**:
+  - Catches configuration errors explicitly
+  - Better error message for missing secret
+  - Prevents cryptic runtime errors
+  - Explicit logging for server issues
 
-**[15] Property Assignment:**
-- JavaScript: Works but no type checking
+**[18] Token Verification:**
+- JavaScript: `const decoded = jwt.verify(token, process.env.JWT_SECRET);`
+- TypeScript: `const decoded = jwt.verify(token, jwtSecret) as JwtPayload;`
+- **What's improved**:
+  - Type assertion tells TypeScript the result shape
+  - Uses validated secret variable
+  - Guarantees decoded structure matches JwtPayload
+
+**[19] User Assignment:**
+- JavaScript: `req.user = decoded.user;`
 - TypeScript: `req.user = decoded;`
-- **What it checks**:
-  - `decoded` matches `user` property type
-  - Ensures shape is correct
-  - Prevents type mismatches
+- **What changed**:
+  - Different token structure (direct JwtPayload vs nested)
+  - TypeScript knows the shape of req.user
+  - Type-safe assignment checked by compiler
 
-**Real-World Example:**
-```typescript
-// TypeScript middleware usage:
-app.use('/api/users', authMiddleware, (req: CustomRequest, res) => {
-  // TypeScript knows req.user exists and its shape
-  if (req.user) {
-    console.log(`User ${req.user.userId} accessing users endpoint`);
-    // TypeScript autocompletes: req.user.email also exists
-  }
+**[20-21] Error Handling:**
+- JavaScript: Simple catch with generic message
+- TypeScript: Specific handling for different JWT error types
+- **What's improved**:
+  - Differentiates between token expiration and invalidity
+  - Uses error instanceof checks for type safety
+  - Better error messages for different error conditions
+  - Proper logging with type checking
+
+**Real-World Usage Comparison:**
+
+```javascript
+// JavaScript (unsafe):
+app.get('/profile', authMiddleware, (req, res) => {
+  // Could fail at runtime - no guarantee user or user.id exists
+  const userId = req.user.id;
+  // Could have typos like req.user.useId that aren't caught
 });
+```
 
-// JavaScript equivalent (no type safety):
-app.use('/api/users', authMiddleware, (req, res) => {
-  if (req.user) {
-    console.log(`User ${req.user.userId} accessing users endpoint`);
-    // Could typo: req.user.userIdd - no error until runtime!
+```typescript
+// TypeScript (type-safe):
+app.get('/profile', authMiddleware, (req: AuthenticatedRequest, res: Response) => {
+  // TypeScript ensures req.user might be undefined
+  if (!req.user) {
+    return res.status(401).json({ message: 'Not authenticated' });
   }
+  // TypeScript knows user has userId property (not id)
+  const userId = req.user.userId;
+  // TypeScript would error on non-existent properties
 });
 ```
 
