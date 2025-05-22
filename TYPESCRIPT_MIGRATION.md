@@ -1564,7 +1564,22 @@ interface UpdateProfileBody {
 exports.getUserById = async (req, res) => {
 ```
 
-**TypeScript Approach:**
+**Natural Beginner Approach:**
+```typescript
+// What beginners naturally think to do (totally valid!):
+interface GetUserByIdRequest extends Request {
+  params: {
+    id: string;
+  };
+}
+
+export const getUserById = async (
+  req: GetUserByIdRequest,
+  res: Response
+): Promise<void> => {
+```
+
+**Advanced Approach (after discovering Request is generic):**
 ```typescript
 export const getUserById = async (
   req: Request<{ id: string }>,
@@ -1572,9 +1587,20 @@ export const getUserById = async (
 ): Promise<void> => {
 ```
 
+**How You'd Discover the Generic Approach:**
+- **IDE Hints**: When you hover over `Request` in VS Code, you'd see `Request<P, ResBody, ReqBody, ReqQuery, Locals>`
+- **Documentation**: Express TypeScript docs mention the generic parameters
+- **Code Examples**: Seeing other developers use `Request<{...}>` in tutorials/Stack Overflow
+- **Type Definition Files**: Looking at `node_modules/@types/express/index.d.ts`
+- **Trial and Error**: Trying different approaches until you find this pattern
+
+**Why Both Approaches Work:**
+- **Custom Interface**: More explicit, easier to understand for beginners
+- **Generic Interface**: Less code, more flexible, industry standard
+
 **What's Improved:**
 - **ES6 Exports**: Modern `export const` instead of CommonJS `exports.` pattern
-- **Route Parameter Typing**: `Request<{ id: string }>` tells TypeScript that `req.params.id` is a string
+- **Route Parameter Typing**: Both approaches tell TypeScript that `req.params.id` is a string
   - **Request Interface Structure**: Express defines `Request<P, ResBody, ReqBody, ReqQuery, Locals>` with 5 object type slots
     - `P` = Route params object (like `{ id: string }`, `{ userId: number }`) → becomes `req.params`
     - `ResBody` = Response body object type (rarely used)
