@@ -1180,9 +1180,9 @@ export const authMiddleware = (
 };
 ```
 
-## What Changed & TypeScript Benefits
+### What Changed & TypeScript Benefits
 
-### **Module System & Imports**
+#### **Module System & Imports**
 
 **JavaScript Approach:**
 ```javascript
@@ -1201,7 +1201,7 @@ import jwt from 'jsonwebtoken';
 - **Better IDE Support**: TypeScript knows what methods and properties are available
 - **Consistent Module System**: All imports use the same syntax pattern
 
-### **Type Safety & Interface Definitions**
+#### **Type Safety & Interface Definitions**
 
 **JavaScript Approach:**
 - No explicit type definitions
@@ -1231,7 +1231,7 @@ export interface AuthenticatedRequest extends Request {
 - **Modern Naming**: No "I" prefix following current TypeScript conventions
 - **Nested Structure**: JWT payload allows for extensibility (iat, exp, etc.)
 
-### **Function Signature & Export**
+#### **Function Signature & Export**
 
 **JavaScript Approach:**
 ```javascript
@@ -1254,7 +1254,7 @@ export const authMiddleware = (
 - **Better Autocompletion**: IDE knows exactly what methods are available
 - **Runtime Error Prevention**: TypeScript catches invalid parameter usage
 
-### **Token Extraction & Validation**
+#### **Token Extraction & Validation**
 
 **JavaScript Approach:**
 ```javascript
@@ -1292,7 +1292,7 @@ if (!jwtSecret) {
 - **More Performant**: `substring(7)` is more efficient than `replace()`
 - **Clearer Intent**: Each step is explicit and self-documenting
 
-### **JWT Processing & Type Assertions**
+#### **JWT Processing & Type Assertions**
 
 **JavaScript Approach:**
 ```javascript
@@ -1313,7 +1313,7 @@ req.user = decoded.user;
 - **Structured Data**: Nested JWT payload allows for organized token structure
 - **Prevent Property Errors**: TypeScript catches typos in property names
 
-### **Error Handling & Type Safety**
+#### **Error Handling & Type Safety**
 
 **JavaScript Approach:**
 ```javascript
@@ -1343,7 +1343,7 @@ catch (error) {
 - **Type-Safe Logging**: Check if error is an Error object before accessing properties
 - **Comprehensive Coverage**: Handle both known and unknown error types
 
-## Real-World Usage Comparison
+### Real-World Usage Comparison
 
 **JavaScript (Runtime Errors Possible):**
 ```javascript
@@ -1368,7 +1368,7 @@ app.get('/profile', authMiddleware, (req: AuthenticatedRequest, res: Response) =
 });
 ```
 
-## Key Takeaways
+### Key Takeaways
 
 1. **TypeScript Forces Better Practices**: Explicit validation, proper error handling, and clear interfaces
 2. **Separation of Concerns**: Token extraction, validation, and processing are clearly separated
@@ -1376,7 +1376,7 @@ app.get('/profile', authMiddleware, (req: AuthenticatedRequest, res: Response) =
 4. **Compile-Time Safety**: Catch errors during development, not in production
 5. **Better Developer Experience**: IDE support, autocompletion, and refactoring capabilities
 
-# 2.5 Controller Migration Examples
+## 2.5 Controller Migration Examples
 
 **Before vs After:**
 
@@ -1503,9 +1503,9 @@ export const updateProfile = async (
 };
 ```
 
-## What Changed & TypeScript Benefits
+### What Changed & TypeScript Benefits
 
-### **Module System & Imports**
+#### **Module System & Imports**
 
 **JavaScript Approach:**
 ```javascript
@@ -1527,7 +1527,7 @@ import { AuthenticatedRequest } from '../middleware/auth';
 - **Better Tree Shaking**: ES6 modules enable better build optimization
 - **IDE Integration**: TypeScript provides better autocompletion and refactoring
 
-### **Type Safety & Interface Definitions**
+#### **Type Safety & Interface Definitions**
 
 **JavaScript Approach:**
 - No explicit type definitions for request bodies or parameters
@@ -1557,7 +1557,7 @@ interface UpdateProfileBody {
 - **Import Shared Types**: Reuse `AuthenticatedRequest` from auth middleware (already exported)
 - **Controller-Specific Types**: Keep `UpdateProfileBody` internal since it's only used here
 
-### **Function Signature & Export**
+#### **Function Signature & Export**
 
 **JavaScript Approach:**
 ```javascript
@@ -1580,7 +1580,7 @@ export const getUserById = async (
 - **Better IDE Support**: Full autocompletion for request/response methods
 - **Compile-Time Validation**: TypeScript prevents parameter misuse
 
-### **Shared vs Local Type Usage**
+#### **Shared vs Local Type Usage**
 
 **JavaScript Approach:**
 ```javascript
@@ -1611,7 +1611,7 @@ export const updateProfile = async (
 - **Type-Safe Property Access**: `req.user?.userId` matches auth middleware structure
 - **Consistent Null Checking**: Same pattern across all authenticated endpoints
 
-### **Authentication & Authorization Checks**
+#### **Authentication & Authorization Checks**
 
 **JavaScript Approach:**
 ```javascript
@@ -1637,7 +1637,7 @@ const user = await User.findById(req.user.userId);
 - **Runtime Protection**: Prevents accessing undefined properties
 - **Consistent Property Names**: Uses `userId` to match auth middleware structure
 
-### **Control Flow & Early Returns**
+#### **Control Flow & Early Returns**
 
 **JavaScript Approach:**
 ```javascript
@@ -1660,7 +1660,7 @@ if (!user) {
 - **Better Debugging**: Easier to set breakpoints on response vs return
 - **Function Contract**: Return type matches actual behavior
 
-### **Error Handling & Type Safety**
+#### **Error Handling & Type Safety**
 
 **JavaScript Approach:**
 ```javascript
@@ -1686,7 +1686,7 @@ catch (error) {
 - **Error Categorization**: Different handling for different error types
 - **Type-Safe Property Access**: No assumptions about error object structure
 
-### **Data Transformation & Security**
+#### **Data Transformation & Security**
 
 **JavaScript Approach:**
 ```javascript
@@ -1709,7 +1709,7 @@ res.json(userResponse);
 - **Consistent Security**: Password removal is guaranteed across all responses
 - **Better Type Inference**: TypeScript knows the exact shape of response object
 
-## Real-World Cross-Service Usage
+### Real-World Cross-Service Usage
 
 **Shared Authentication Interface:**
 ```typescript
@@ -1742,7 +1742,7 @@ interface CreateEventBody { /* event-specific fields */ }
 interface CreateInvitationBody { /* invitation-specific fields */ }
 ```
 
-## Real-World Usage Comparison
+### Real-World Usage Comparison
 
 **JavaScript (Runtime Errors Possible):**
 ```javascript
@@ -1804,7 +1804,7 @@ export const updateProfile = async (
 };
 ```
 
-## Key Takeaways
+### Key Takeaways
 
 1. **Strategic Type Sharing**: Only export interfaces that are actually reused (like `AuthenticatedRequest`)
 2. **Controller-Specific Types**: Keep request body interfaces internal to their controllers
