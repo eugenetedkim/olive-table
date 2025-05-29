@@ -1982,6 +1982,11 @@ import jwt from 'jsonwebtoken';
 import User, { IUser } from '../../domain/models/User';
 import { AuthenticatedRequest } from '../middleware/auth';
 
+// Module-level type guard for reusable, safe MongoDB error detection
+const isMongoError = (err: unknown): err is { code: number } => {
+  return err && typeof err === 'object' && 'code' in err && typeof err.code === 'number';
+};
+
 // Controller-specific interfaces (not exported - only used here)
 interface RegisterBody {
   email: string;
@@ -2026,15 +2031,13 @@ export const register = async (
         res.status(400).json({ message: error.message });
         return;
       }
-      
-      // MongoDB duplicate key error
-      const mongoError = error as { code?: number };
-      if (mongoError.code === 11000) {
-        res.status(400).json({ message: 'User already exists' });
-        return;
-      }
-      
       console.error('Registration error:', error.message);
+    }
+    
+    // MongoDB duplicate key error using module-level type guard
+    if (isMongoError(error) && error.code === 11000) {
+      res.status(400).json({ message: 'User already exists' });
+      return;
     }
     
     res.status(500).json({ message: 'Server error occurred during registration' });
@@ -2096,6 +2099,13 @@ export const login = async (
       }
     );
   } catch (error) {
+    // Reuse the same type guard for consistent error handling
+    if (isMongoError(error)) {
+      console.error('MongoDB error in login:', error.code);
+      res.status(500).json({ message: 'Database error occurred during login' });
+      return;
+    }
+    
     console.error('Login error:', error instanceof Error ? error.message : String(error));
     res.status(500).json({ message: 'Server error occurred during login' });
   }
@@ -2122,6 +2132,13 @@ export const getMe = async (
   } catch (error) {
     if (error instanceof Error && error.name === 'CastError') {
       res.status(400).json({ message: 'Invalid user ID format' });
+      return;
+    }
+    
+    // Same type guard used consistently across all functions
+    if (isMongoError(error)) {
+      console.error('MongoDB error in getMe:', error.code);
+      res.status(500).json({ message: 'Database error occurred while retrieving user' });
       return;
     }
     
@@ -2244,7 +2261,7 @@ jwt.sign(
 - **Error Handling**: No throwing errors, proper error responses instead
 - **Type-Safe Responses**: Ensures consistent error response structure
 
-### **MongoDB Error Handling**
+### **MongoDB Error Handling & Module-Level Type Guards**
 
 **JavaScript Approach:**
 ```javascript
@@ -2258,29 +2275,37 @@ catch (err) {
 
 **TypeScript Approach:**
 ```typescript
+// Module-level type guard for reusable error detection
+const isMongoError = (err: unknown): err is { code: number } => {
+  return err && typeof err === 'object' && 'code' in err && typeof err.code === 'number';
+};
+
 catch (error) {
   if (error instanceof Error) {
     if (error.name === 'ValidationError') {
       res.status(400).json({ message: error.message });
       return;
     }
-    
-    const mongoError = error as { code?: number };
-    if (mongoError.code === 11000) {
-      res.status(400).json({ message: 'User already exists' });
-      return;
-    }
   }
+  
+  // Safe, verified MongoDB error detection
+  if (isMongoError(error) && error.code === 11000) {
+    res.status(400).json({ message: 'User already exists' });
+    return;
+  }
+  
   res.status(500).json({ message: 'Server error occurred' });
 }
 ```
 
 **What's Improved:**
-- **Type Guards**: `instanceof Error` ensures safe property access
-- **Type Assertions**: `error as { code?: number }` for MongoDB-specific properties
+- **Type Guards**: Runtime verification ensures actual type safety
+- **Code Reusability**: Define once at module level, use across all functions
+- **Separation of Concerns**: Infrastructure logic (error detection) separated from business logic
+- **No Type Assertions**: Avoid false confidence from `as` keyword with runtime verification
 - **Validation Error Handling**: Specific handling for Mongoose validation errors
-- **Safe Property Access**: No assumptions about error object structure
-- **Comprehensive Coverage**: Handles both known and unknown error types
+- **Consistent Error Detection**: Same MongoDB error checking logic everywhere
+- **Performance**: Type guard function created once, not per request
 
 ### **User Response Security**
 
@@ -2318,11 +2343,14 @@ res.json({
 
 1. **Environment Validation**: Always validate critical environment variables before use
 2. **JWT Error Handling**: Handle JWT signing errors gracefully, don't throw
-3. **MongoDB Error Types**: Use type assertions for database-specific error properties
-4. **Callback Typing**: Type JWT callback parameters for better error handling
-5. **Consistent Security**: Use schema transforms for automatic password removal
-6. **Configuration Safety**: Fail fast on missing critical configuration
-7. **Type-Safe Responses**: Ensure all response paths have consistent structure
+3. **Module-Level Type Guards**: Define reusable type guards at module level for consistent error handling
+4. **MongoDB Error Types**: Use type guards instead of type assertions for database-specific error properties
+5. **Callback Typing**: Type JWT callback parameters for better error handling
+6. **Consistent Security**: Use schema transforms for automatic password removal
+7. **Configuration Safety**: Fail fast on missing critical configuration
+8. **Type-Safe Responses**: Ensure all response paths have consistent structure
+9. **Separation of Concerns**: Keep infrastructure logic (error detection) separate from business logic
+10. **Code Reusability**: Define utility functions at module level to avoid duplication
 
 # Identity Service Migration - Part 3 (Routes, Main App, Docker)
 
