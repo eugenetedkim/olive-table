@@ -2343,6 +2343,84 @@ catch (error) {  // error: unknown (could be anything)
   console.log(error.code);  // ❌ TypeScript error: code doesn't exist on unknown
 }
 
+### **Beginner vs Advanced Approach**
+
+You have two options for handling the type checking. Choose based on your TypeScript comfort level:
+
+#### **Option 1: Beginner-Friendly (Boolean + Type Assertions)**
+
+```typescript
+// Simple boolean return - easy to understand
+const hasErrorCode = (err: unknown): boolean => {
+  return typeof err === 'object' && 
+         err !== null && 
+         'code' in err && 
+         typeof err.code === 'number';
+};
+
+// Usage - explicit type assertions
+catch (error) {
+  if (hasErrorCode(error)) {
+    const errorWithCode = error as { code: number };  // Tell TypeScript: "error has .code"
+    if (errorWithCode.code === 11000) {               // Now we can safely use .code
+      res.status(400).json({ message: 'User already exists' });
+      return;
+    }
+  }
+}
+```
+
+**Pros:**
+- ✅ **Easy to understand**: function returns `true` or `false`
+- ✅ **Explicit**: you can see exactly what's happening at each step
+- ✅ **No TypeScript "magic"**: straightforward, familiar logic
+- ✅ **Beginner-friendly**: uses concepts most developers already know
+
+**Cons:**
+- ❌ **More verbose**: need to write `as { code: number }` every time you use it
+- ❌ **Repetitive**: same type assertion in multiple places
+
+#### **Option 2: Advanced (Type Predicate)**
+
+```typescript
+// Type predicate - tells TypeScript what the parameter looks like when true
+const hasErrorCode = (err: unknown): err is { code: number } => {
+  return typeof err === 'object' && 
+         err !== null && 
+         'code' in err && 
+         typeof err.code === 'number';
+};
+
+// Usage - TypeScript automatically knows error has .code
+catch (error) {
+  if (hasErrorCode(error)) {
+    if (error.code === 11000) {  // No type assertion needed!
+      res.status(400).json({ message: 'User already exists' });
+      return;
+    }
+  }
+}
+```
+
+**Pros:**
+- ✅ **Cleaner usage**: no type assertions needed anywhere
+- ✅ **DRY principle**: write the type logic once, use everywhere
+- ✅ **TypeScript integration**: automatically narrows the error type
+- ✅ **Less repetitive**: cleaner code in your business logic
+
+**Cons:**
+- ❌ **Confusing syntax**: `err is { code: number }` is not intuitive
+- ❌ **"Magic" behavior**: not obvious how TypeScript suddenly knows about `.code`
+- ❌ **Advanced concept**: requires understanding TypeScript type predicates
+
+#### **Our Recommendation:**
+
+**If you're new to TypeScript:** Start with **Option 1** (boolean + type assertions). It's easier to understand and you can always upgrade later when you're more comfortable with TypeScript.
+
+**If you're comfortable with TypeScript:** Use **Option 2** (type predicate) for cleaner, more maintainable code.
+
+**Important:** Both approaches work **exactly the same at runtime** - they just differ in how TypeScript treats your code during development. Choose the one that makes sense for your current TypeScript knowledge level.
+
 ### **User Response Security**
 
 **JavaScript Approach:**
