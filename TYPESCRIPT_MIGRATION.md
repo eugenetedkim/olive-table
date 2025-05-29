@@ -2342,6 +2342,7 @@ catch (error) {  // error: unknown (could be anything)
   // Outside the if block: error is still unknown
   console.log(error.code);  // ❌ TypeScript error: code doesn't exist on unknown
 }
+```
 
 ### **Beginner vs Advanced Approach**
 
