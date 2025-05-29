@@ -2339,6 +2339,205 @@ res.json({
 - **No Manual Field Selection**: Reduces risk of accidentally exposing sensitive data
 - **Better Maintainability**: Adding new fields doesn't require updating response code
 
+## Understanding Separation of Concerns in Error Handling
+
+### **What Are the Two Concerns?**
+
+**1. Infrastructure Concern: "How do I detect a MongoDB error?"**
+This is **technical/infrastructure logic** - it deals with:
+- What does a MongoDB error look like?
+- What properties should I check?
+- How do I verify it's actually a MongoDB error?
+
+**2. Business Concern: "What should I do about this error in my specific use case?"**
+This is **business/domain logic** - it deals with:
+- What does this error mean for user registration?
+- What response should I send to the client?
+- How does this affect my application's workflow?
+
+### **The Problem: Mixed Concerns**
+
+**❌ Bad Approach - Infrastructure mixed with Business:**
+```typescript
+export const register = async (req, res) => {
+  try {
+    // ... registration logic
+  } catch (error) {
+    if (error instanceof Error) {
+      if (error.name === 'ValidationError') {
+        res.status(400).json({ message: error.message });
+        return;
+      }
+      
+      // 🔴 MIXED CONCERNS: Infrastructure logic embedded in business function
+      const mongoError = error as { code?: number };  // Type assertion
+      if (mongoError.code === 11000) {
+        //   ^^^^^^^^^^^^^^^^^^^^
+        //   INFRASTRUCTURE: MongoDB-specific error detection
+        res.status(400).json({ message: 'User already exists' });
+        //                               ^^^^^^^^^^^^^^^^^^^^
+        //                               BUSINESS: Registration-specific response
+        return;
+      }
+      
+      console.error('Registration error:', error.message);
+    }
+    
+    res.status(500).json({ message: 'Server error occurred during registration' });
+  }
+};
+
+export const login = async (req, res) => {
+  try {
+    // ... login logic
+  } catch (error) {
+    // 🔴 PROBLEM: Same infrastructure logic repeated, different business context
+    if (error instanceof Error) {
+      const mongoError = error as { code?: number };  // Duplicated type assertion
+      if (mongoError.code === 11000) {
+        //   ^^^^^^^^^^^^^^^^^^^^
+        //   DUPLICATE INFRASTRUCTURE LOGIC
+        res.status(500).json({ message: 'Database error occurred' });
+        //                               ^^^^^^^^^^^^^^^^^^^^^^^^^
+        //                               DIFFERENT BUSINESS RESPONSE
+        return;
+      }
+    }
+    
+    console.error('Login error:', error instanceof Error ? error.message : String(error));
+    res.status(500).json({ message: 'Server error occurred during login' });
+  }
+};
+```
+
+**Problems:**
+- **Infrastructure logic** (MongoDB error detection) is **embedded** inside business functions
+- **Type assertions** (`error as { code?: number }`) are **scattered** throughout catch blocks
+- **MongoDB error checking** is **mixed** with validation error handling
+- **Same infrastructure code** is **duplicated** with **different business responses**
+- **Error detection logic** is **structurally wrong** (MongoDB errors inside `instanceof Error`)
+- **Hard to maintain**: Change MongoDB error detection = update multiple functions
+
+### **The Solution: Separated Concerns**
+
+**✅ Good Approach - Clean Separation:**
+```typescript
+// 🟢 INFRASTRUCTURE LAYER: Pure technical concern
+const isMongoError = (err: unknown): err is { code: number } => {
+  return err && typeof err === 'object' && 'code' in err && typeof err.code === 'number';
+};
+//     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+//     SINGLE RESPONSIBILITY: Only cares about "how to detect MongoDB errors"
+//     Doesn't know or care what you do with this information
+
+// 🟢 BUSINESS LAYER: Pure domain/application logic
+export const register = async (req, res) => {
+  try {
+    // ... clean registration business logic
+  } catch (error) {
+    if (isMongoError(error) && error.code === 11000) {
+      //  ^^^^^^^^^^^^^^^         ^^^^^^^^^^^^^^^
+      //  Infrastructure          Business interpretation
+      //  (detection)             (what 11000 means for registration)
+      res.status(400).json({ message: 'User already exists' });
+      //                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      //                     Pure business response
+    }
+  }
+};
+
+export const updateProfile = async (req, res) => {
+  try {
+    // ... clean update business logic  
+  } catch (error) {
+    if (isMongoError(error) && error.code === 11000) {
+      //  ^^^^^^^^^^^^^^^         ^^^^^^^^^^^^^^^
+      //  Same infrastructure     Different business interpretation
+      res.status(400).json({ message: 'Profile data conflicts' });
+      //                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      //                     Different business context
+    }
+  }
+};
+```
+
+### **Benefits of Separation**
+
+**1. Single Responsibility**
+```typescript
+// Infrastructure function has ONE job: detect MongoDB errors
+const isMongoError = (err: unknown): err is { code: number } => {
+  // Doesn't care what you do with the result
+  // Just answers: "Is this a MongoDB error? Yes/No"
+};
+
+// Business function has ONE job: handle registration workflow  
+export const register = async (req, res) => {
+  // Doesn't care HOW errors are detected
+  // Just knows: "If MongoDB duplicate error, then user exists"
+};
+```
+
+**2. Independent Evolution**
+```typescript
+// If MongoDB changes error format, only update infrastructure
+const isMongoError = (err: unknown): err is { code: number; name: string } => {
+  return err && 
+         typeof err === 'object' && 
+         'code' in err && 
+         typeof err.code === 'number' &&
+         'name' in err && 
+         err.name === 'MongoError'; // NEW REQUIREMENT
+};
+
+// ✅ Business logic unchanged - abstraction protects it
+export const register = async (req, res) => {
+  // No changes needed - still works!
+  if (isMongoError(error) && error.code === 11000) {
+    res.status(400).json({ message: 'User already exists' });
+  }
+};
+```
+
+**3. Code Reusability**
+```typescript
+// One infrastructure function serves many business contexts
+const isMongoError = /* ... */; // Defined once
+
+// Used in different business scenarios
+export const register = /* uses isMongoError for registration context */;
+export const login = /* uses isMongoError for authentication context */;  
+export const updateProfile = /* uses isMongoError for update context */;
+export const deleteUser = /* uses isMongoError for deletion context */;
+```
+
+### **Real-World Analogy**
+
+Think of it like a **car dashboard**:
+
+**❌ Mixed Concerns (Bad):**
+```
+Every time you want to know your speed, you have to:
+1. Open the hood
+2. Check the engine RPM
+3. Calculate gear ratios  
+4. Convert to miles per hour
+5. Then decide if you're speeding
+```
+
+**✅ Separated Concerns (Good):**
+```
+Infrastructure: Speedometer (detects speed)
+Business Logic: Driver (interprets what speed means)
+
+1. Speedometer: "Current speed is 80 mph"
+2. Driver: "80 mph in a 65 zone means I'm speeding, slow down"
+```
+
+The **speedometer** doesn't care what you do with the speed information - it just accurately reports it. The **driver** doesn't care how speed is calculated - they just know what different speeds mean for their driving decisions.
+
+**That's separation of concerns!**
+
 ## Key Takeaways for Auth Controllers
 
 1. **Environment Validation**: Always validate critical environment variables before use
