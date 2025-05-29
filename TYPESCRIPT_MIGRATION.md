@@ -1982,10 +1982,13 @@ import jwt from 'jsonwebtoken';
 import User, { IUser } from '../../domain/models/User';
 import { AuthenticatedRequest } from '../middleware/auth';
 
-// Module-level type guard for reusable, safe MongoDB error detection
-const isMongoError = (err: unknown): err is { code: number } => {
-  return err && typeof err === 'object' && 'code' in err && typeof err.code === 'number';
-};
+// Module-level type guard for errors with numeric code
+const hasErrorCode = (err: unknown): err is { code: number } => {
+  return typeof err == 'object' &&
+         err !== null &&
+         'code' in err &&
+         typeof err.code === 'number';
+}
 
 // Controller-specific interfaces (not exported - only used here)
 interface RegisterBody {
@@ -2035,7 +2038,7 @@ export const register = async (
     }
     
     // MongoDB duplicate key error using module-level type guard
-    if (isMongoError(error) && error.code === 11000) {
+    if (hasErrorCode(error) && error.code === 11000) {
       res.status(400).json({ message: 'User already exists' });
       return;
     }
@@ -2100,7 +2103,7 @@ export const login = async (
     );
   } catch (error) {
     // Reuse the same type guard for consistent error handling
-    if (isMongoError(error)) {
+    if (hasErrorCode(error)) {
       console.error('MongoDB error in login:', error.code);
       res.status(500).json({ message: 'Database error occurred during login' });
       return;
@@ -2136,7 +2139,7 @@ export const getMe = async (
     }
     
     // Same type guard used consistently across all functions
-    if (isMongoError(error)) {
+    if (hasErrorCode(error)) {
       console.error('MongoDB error in getMe:', error.code);
       res.status(500).json({ message: 'Database error occurred while retrieving user' });
       return;
@@ -2261,7 +2264,7 @@ jwt.sign(
 - **Error Handling**: No throwing errors, proper error responses instead
 - **Type-Safe Responses**: Ensures consistent error response structure
 
-### **MongoDB Error Handling & Module-Level Type Guards**
+### **Error Code Handling & Module-Level Type Guards**
 
 **JavaScript Approach:**
 ```javascript
@@ -2276,8 +2279,11 @@ catch (err) {
 **TypeScript Approach:**
 ```typescript
 // Module-level type guard for reusable error detection
-const isMongoError = (err: unknown): err is { code: number } => {
-  return err && typeof err === 'object' && 'code' in err && typeof err.code === 'number';
+const hasErrorCode = (err: unknown): err is { code: number } => {
+  return typeof err === 'object' &&
+         err !== null &&
+         'code' in err &&
+         typeof err.code === 'number';
 };
 
 catch (error) {
@@ -2289,7 +2295,7 @@ catch (error) {
   }
   
   // Improved error detection with type guard
-  if (isMongoError(error) && error.code === 11000) {
+  if (hasErrorCode(error) && error.code === 11000) {
     res.status(400).json({ message: 'User already exists' });
     return;
   }
@@ -2306,6 +2312,36 @@ catch (error) {
 - **Validation Error Handling**: Specific handling for Mongoose validation errors
 - **Consistent Error Detection**: Same MongoDB error checking logic everywhere
 - **Performance**: Type guard function created once, not per request
+
+### **Understanding the Type Guard**
+
+The `hasErrorCode` function does two things:
+
+**1. At Runtime (what actually happens):**
+- Returns `true` if the error has a numeric `code` property
+- Returns `false` if the error doesn't have a numeric `code` property
+- It's just a boolean function that checks the error structure
+
+**2. At Compile-Time (TypeScript magic):**
+The `err is { code: number }` part is called a **type predicate**. It tells TypeScript:
+*"If this function returns `true`, then treat the parameter as having type `{ code: number }`"*
+
+```typescript
+// Before the check:
+catch (error) {  // error: unknown (could be anything)
+  
+  if (hasErrorCode(error)) {
+    // Inside this block: TypeScript now knows error has .code property
+    console.log(error.code);  // ✅ No TypeScript errors!
+    
+    if (error.code === 11000) {  // ✅ TypeScript knows .code exists
+      // Handle MongoDB duplicate key error
+    }
+  }
+  
+  // Outside the if block: error is still unknown
+  console.log(error.code);  // ❌ TypeScript error: code doesn't exist on unknown
+}
 
 ### **User Response Security**
 
@@ -2423,11 +2459,11 @@ export const login = async (req, res) => {
 **✅ Good Approach - Clean Separation:**
 ```typescript
 // 🟢 INFRASTRUCTURE LAYER: Pure technical concern
-const isMongoError = (err: unknown): err is { code: number } => {
-  return err && typeof err === 'object' && 'code' in err && typeof err.code === 'number';
+const hasErrorCode = (err: unknown): err is { code: number } => {
+  return typeof err === 'object' && err !== null && 'code' in err && typeof err.code === 'number';
 };
 //     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-//     SINGLE RESPONSIBILITY: Only cares about "how to detect MongoDB errors"
+//     SINGLE RESPONSIBILITY: Only cares about "errors with numeric codes"
 //     Doesn't know or care what you do with this information
 
 // 🟢 BUSINESS LAYER: Pure domain/application logic
@@ -2435,7 +2471,7 @@ export const register = async (req, res) => {
   try {
     // ... clean registration business logic
   } catch (error) {
-    if (isMongoError(error) && error.code === 11000) {
+    if (hasErrorCode(error) && error.code === 11000) {
       //  ^^^^^^^^^^^^^^^         ^^^^^^^^^^^^^^^
       //  Infrastructure          Business interpretation
       //  (detection)             (what 11000 means for registration)
@@ -2450,7 +2486,7 @@ export const updateProfile = async (req, res) => {
   try {
     // ... clean update business logic  
   } catch (error) {
-    if (isMongoError(error) && error.code === 11000) {
+    if (hasErrorCode(error) && error.code === 11000) {
       //  ^^^^^^^^^^^^^^^         ^^^^^^^^^^^^^^^
       //  Same infrastructure     Different business interpretation
       res.status(400).json({ message: 'Profile data conflicts' });
@@ -2465,10 +2501,10 @@ export const updateProfile = async (req, res) => {
 
 **1. Single Responsibility**
 ```typescript
-// Infrastructure function has ONE job: detect MongoDB errors
-const isMongoError = (err: unknown): err is { code: number } => {
+// Infrastructure function has ONE job: detect errors with numeric codes
+const hasErrorCode = (err: unknown): err is { code: number } => {
   // Doesn't care what you do with the result
-  // Just answers: "Is this a MongoDB error? Yes/No"
+  // Just answers: "Does this error have a numeric code? Yes/No"
 };
 
 // Business function has ONE job: handle registration workflow  
@@ -2481,9 +2517,8 @@ export const register = async (req, res) => {
 **2. Independent Evolution**
 ```typescript
 // If MongoDB changes error format, only update infrastructure
-const isMongoError = (err: unknown): err is { code: number; name: string } => {
-  return err && 
-         typeof err === 'object' && 
+const hasErrorCode = (err: unknown): err is { code: number; name: string } => {
+  return typeof err === 'object' && 
          'code' in err && 
          typeof err.code === 'number' &&
          'name' in err && 
@@ -2493,7 +2528,7 @@ const isMongoError = (err: unknown): err is { code: number; name: string } => {
 // ✅ Business logic unchanged - abstraction protects it
 export const register = async (req, res) => {
   // No changes needed - still works!
-  if (isMongoError(error) && error.code === 11000) {
+  if (hasErrorCode(error) && error.code === 11000) {
     res.status(400).json({ message: 'User already exists' });
   }
 };
@@ -2502,13 +2537,13 @@ export const register = async (req, res) => {
 **3. Code Reusability**
 ```typescript
 // One infrastructure function serves many business contexts
-const isMongoError = /* ... */; // Defined once
+const hasErrorCode = /* ... */; // Defined once
 
 // Used in different business scenarios
-export const register = /* uses isMongoError for registration context */;
-export const login = /* uses isMongoError for authentication context */;  
-export const updateProfile = /* uses isMongoError for update context */;
-export const deleteUser = /* uses isMongoError for deletion context */;
+export const register = /* uses hasErrorCode for registration context */;
+export const login = /* uses hasErrorCode for authentication context */;  
+export const updateProfile = /* uses hasErrorCode for update context */;
+export const deleteUser = /* uses hasErrorCode for deletion context */;
 ```
 
 ### **Real-World Analogy**
