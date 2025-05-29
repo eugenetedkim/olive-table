@@ -2275,15 +2275,9 @@ catch (err) {
 
 **TypeScript Approach:**
 ```typescript
-// 🏗️ INFRASTRUCTURE LOGIC: Pure technical concern
+// Module-level type guard for reusable error detection
 const isMongoError = (err: unknown): err is { code: number } => {
   return err && typeof err === 'object' && 'code' in err && typeof err.code === 'number';
-  //     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  //     INFRASTRUCTURE: "How to detect if this is a MongoDB error"
-  //     - Checks object structure
-  //     - Verifies 'code' property exists  
-  //     - Confirms 'code' is a number
-  //     - Doesn't care what you do with this information
 };
 
 catch (error) {
@@ -2294,92 +2288,20 @@ catch (error) {
     }
   }
   
-  // 🏗️ INFRASTRUCTURE LOGIC: Error detection
+  // Improved error detection with type guard
   if (isMongoError(error) && error.code === 11000) {
-    //  ^^^^^^^^^^^^^^^         ^^^^^^^^^^^^^^^
-    //  INFRASTRUCTURE:         INFRASTRUCTURE: 
-    //  "Is this a MongoDB      "Is this error code 11000?"
-    //  error?"                 (duplicate key constraint)
-    
-    // 📋 BUSINESS LOGIC: What this means for the registration process
     res.status(400).json({ message: 'User already exists' });
-    //  ^^^^^^^^^^              ^^^^^^^^^^^^^^^^^^^^
-    //  BUSINESS:               BUSINESS:
-    //  "Registration should    "In registration context,
-    //  return 400 error"       duplicate key means user exists"
     return;
   }
   
-  // 📋 BUSINESS LOGIC: How registration handles unknown errors
   res.status(500).json({ message: 'Server error occurred' });
-  //  ^^^^^^^^^^              ^^^^^^^^^^^^^^^^^^^^^^^^^
-  //  BUSINESS:               BUSINESS:
-  //  "Registration returns   "Generic message for registration
-  //  500 for unknown errors" context"
 }
-```
-
-**Same Infrastructure, Different Business Contexts:**
-```typescript
-// Same infrastructure function serves different business needs
-const isMongoError = /* ... same detection logic ... */;
-
-// 📋 REGISTRATION CONTEXT: Business logic for user signup
-export const register = async (req, res) => {
-  try { /* ... */ } catch (error) {
-    if (isMongoError(error) && error.code === 11000) {
-      //  ^^^^^^^^^^^^^^^         ^^^^^^^^^^^^^^^
-      //  INFRASTRUCTURE          INFRASTRUCTURE
-      
-      // 📋 BUSINESS LOGIC: Registration-specific interpretation
-      res.status(400).json({ message: 'User already exists' });
-      //  ^^^^^^^^^^              ^^^^^^^^^^^^^^^^^^^^
-      //  BUSINESS:               BUSINESS:
-      //  "Bad request for        "User-friendly message for
-      //  registration"           registration failure"
-    }
-  }
-};
-
-// 📋 LOGIN CONTEXT: Business logic for authentication
-export const login = async (req, res) => {
-  try { /* ... */ } catch (error) {
-    if (isMongoError(error)) {
-      //  ^^^^^^^^^^^^^^^
-      //  INFRASTRUCTURE (same detection)
-      
-      // 📋 BUSINESS LOGIC: Login-specific interpretation  
-      res.status(500).json({ message: 'Database error occurred during login' });
-      //  ^^^^^^^^^^              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-      //  BUSINESS:               BUSINESS:
-      //  "Server error for       "Technical message for login context"
-      //  authentication"
-    }
-  }
-};
-
-// 📋 PROFILE UPDATE CONTEXT: Business logic for user updates
-export const updateProfile = async (req, res) => {
-  try { /* ... */ } catch (error) {
-    if (isMongoError(error) && error.code === 11000) {
-      //  ^^^^^^^^^^^^^^^         ^^^^^^^^^^^^^^^
-      //  INFRASTRUCTURE          INFRASTRUCTURE (same as above)
-      
-      // 📋 BUSINESS LOGIC: Profile update-specific interpretation
-      res.status(409).json({ message: 'Profile conflicts with existing data' });
-      //  ^^^^^^^^^^              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-      //  BUSINESS:               BUSINESS:
-      //  "Conflict status for    "Context-specific message for profile
-      //  profile updates"        update conflicts"
-    }
-  }
-};
 ```
 
 **What's Improved:**
 - **Type Guards**: Runtime verification ensures actual type safety
 - **Code Reusability**: Define once at module level, use across all functions
-- **Separation of Concerns**: Infrastructure logic (error detection) separated from business logic
+- **Improved Organization**: Infrastructure logic (error detection) centralized at module level
 - **No Type Assertions**: Avoid false confidence from `as` keyword with runtime verification
 - **Validation Error Handling**: Specific handling for Mongoose validation errors
 - **Consistent Error Detection**: Same MongoDB error checking logic everywhere
