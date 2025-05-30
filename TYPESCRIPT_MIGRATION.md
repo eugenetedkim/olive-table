@@ -2104,7 +2104,7 @@ export const login = async (
   } catch (error) {
     // Reuse the same type guard for consistent error handling
     if (hasErrorCode(error)) {
-      console.error('MongoDB error in login:', error.code);
+      console.error('Database error in login:', error.code);
       res.status(500).json({ message: 'Database error occurred during login' });
       return;
     }
@@ -2140,7 +2140,7 @@ export const getMe = async (
     
     // Same type guard used consistently across all functions
     if (hasErrorCode(error)) {
-      console.error('MongoDB error in getMe:', error.code);
+      console.error('Database error in getMe:', error.code);
       res.status(500).json({ message: 'Database error occurred while retrieving user' });
       return;
     }
