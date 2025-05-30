@@ -1,6 +1,6 @@
 # Olive Table - Complete TypeScript Migration Guide
 
-Welcome to the TypeScript migration guide for the Olive Table application. This comprehensive guide will walk you through the step-by-step process of converting a Node.js/Express microservices application from JavaScript to TypeScript.
+Welcome to the comprehensive TypeScript migration guide for the Olive Table application. This guide will walk you through converting a Node.js/Express microservices application from JavaScript to TypeScript using best practices and proven strategies.
 
 ## Why TypeScript?
 
@@ -12,7 +12,11 @@ TypeScript offers several advantages for backend development:
 4. **Safer Refactoring**: Make changes with confidence that types will catch breaking changes
 5. **Better Code Organization**: Interfaces, enums, and modules help structure your code
 
-## 📋 Migration Checklist
+---
+
+# 1. Project Overview & Planning
+
+## 1.1 Migration Checklist
 
 Use this checklist to track your progress across all services:
 
@@ -70,7 +74,7 @@ Use this checklist to track your progress across all services:
 - [ ] Run integration tests
 - [ ] Create new tag `v2.0.0-typescript-complete`
 
-## 📌 Starting Point
+## 1.2 Starting Point (Git Tags & Baseline)
 
 **Git Tags: Your Project Time Machine**
 
@@ -112,7 +116,7 @@ git checkout main
 
 *📚 Note: When you "checkout main", you're returning to your primary development branch. This is where you'll make all the TypeScript changes. The tag is just for reference or rollback if needed.*
 
-## 🔄 Migration Order
+## 1.3 Migration Order & Strategy
 
 We follow dependency order for stability:
 
@@ -130,41 +134,28 @@ v1.0.0-docker-baseline (Current State)
 v2.0.0-typescript-complete
 ```
 
-## Migration Guide Structure
+## 1.4 Guide Structure Overview
 
 This guide is organized into the following sections:
 
-1. **Introduction & Migration Checklist** (this document)
-   - Overview and project planning
-
-2. **TypeScript Fundamentals & Best Practices**
-   - Core TypeScript concepts 
-   - Common pitfalls
-   - Best practices for handling sensitive data
-
-3. **Identity Service Migration - Part 1 (Setup & User Model)**
-   - TypeScript configuration
-   - Package.json scripts
-   - User model migration with schema transforms
-
-4. **Identity Service Migration - Part 2 (Controllers & Middleware)**
-   - Parallel files approach
-   - Middleware migration
-   - Controller migration with type safety
-
-5. **Identity Service Migration - Part 3 (Routes, Main App, Docker)**
-   - Route migration
-   - Main application setup
-   - Docker configuration for TypeScript
-   - Testing strategies
-
-For the remaining services (Event Service, Invitation Service, and API Gateway), you'll follow a similar pattern, adapting the migration steps as needed for each service's specific requirements.
+1. **Project Overview & Planning** (this section) - Overview and project planning
+2. **TypeScript Fundamentals & Best Practices** - Core TypeScript concepts and common pitfalls
+3. **Migration Strategy & Workflow** - Safe migration patterns and rollback strategies
+4. **Identity Service Setup** - TypeScript configuration and package setup
+5. **Data Layer Migration** - Models, schemas, and database integration with security patterns
+6. **Business Logic Migration** - Controllers, middleware, and error handling patterns
+7. **Application Integration** - Routes, main app, and cross-service type sharing
+8. **Deployment & Production** - Docker configuration for TypeScript and production setup
+9. **Testing & Validation** - Unit tests, integration tests, and troubleshooting
+10. **Service Completion & Next Steps** - Validation, lessons learned, and preparing for next service
 
 Let's begin by exploring TypeScript fundamentals and best practices, followed by the step-by-step migration process for each service.
 
-# TypeScript Fundamentals & Best Practices
+---
 
-## 🔍 TypeScript Best Practices
+# 2. TypeScript Fundamentals & Best Practices
+
+## 2.1 TypeScript Best Practices
 
 Before starting the migration, let's review some TypeScript best practices that will help make your codebase more maintainable and robust:
 
@@ -250,7 +241,7 @@ Before starting the migration, let's review some TypeScript best practices that 
   - Variables: `camelCase`
   - Constants: `UPPER_SNAKE_CASE`
 
-## 🚫 Common TypeScript Pitfalls
+## 2.2 Common TypeScript Pitfalls
 
 Be aware of these common issues when migrating:
 
@@ -313,7 +304,7 @@ Be aware of these common issues when migrating:
   1. Restructure code to avoid circular references
   2. Use interface-only imports for types
 
-## 🛡️ Handling Sensitive Data in TypeScript
+## 2.3 Handling Sensitive Data in TypeScript
 
 When migrating to TypeScript with strict mode, handling sensitive data like passwords requires special consideration.
 
@@ -399,7 +390,7 @@ console.log(userObj.password);
 const safeJson = JSON.stringify(userObj); // Password guaranteed to be excluded
 ```
 
-## 🔧 Development Setup
+## 2.4 Development Setup
 
 Setting up your IDE correctly will make TypeScript development much more productive.
 
@@ -425,7 +416,7 @@ Create a `.vscode/settings.json` file:
 - TypeScript Hero
 - Path Intellisense
 
-## TypeScript Utility Types
+## 2.5 TypeScript Utility Types
 
 TypeScript provides utility types that are extremely helpful when working with Mongoose data:
 
@@ -456,9 +447,11 @@ TypeScript provides utility types that are extremely helpful when working with M
 
 These utility types help create precise types without duplicating interfaces and work perfectly with Mongoose transformations.
 
-## 🔄 Migration Strategy
+---
 
-### Parallel Files Approach
+# 3. Migration Strategy & Workflow
+
+## 3.1 Parallel Files Approach
 
 The most reliable way to migrate from JavaScript to TypeScript is using a parallel files approach:
 
@@ -517,13 +510,99 @@ git commit -m "chore(identity): Remove JavaScript User model after TypeScript mi
 
 This two-step approach gives you a clear migration path and provides a safety net during implementation.
 
-# Identity Service Migration - Part 1 (Setup & User Model)
+## 3.2 Development and Production Workflows
 
-## Step 1: Identity Service Migration
+### Development Workflow
 
-*📚 Learning Note: We start with Identity Service as it's the foundation for auth*
+When migrating to TypeScript, you'll have two ways to run your application during development:
 
-### 1.1 TypeScript Configuration
+1. **Running Original JavaScript Files**:
+   ```bash
+   # Run the original JavaScript files
+   node src/index.js
+   ```
+   - This runs the untouched JavaScript version
+   - Useful as a reference point during migration
+
+2. **Running TypeScript Files with ts-node**:
+   ```bash
+   # Run TypeScript files directly
+   npm run dev
+   ```
+   - Uses ts-node to run TypeScript without compilation
+   - Provides immediate feedback on type errors
+   - Restarts automatically when files change
+   - During migration, TypeScript files will import from other TypeScript files
+   - JavaScript files will continue to import from JavaScript files
+   - Great for active development and testing
+
+### Production Workflow
+
+For production deployment, you'll use the compiled output:
+
+1. **Build TypeScript to JavaScript**:
+   ```bash
+   npm run build
+   ```
+   - Compiles all TypeScript files to JavaScript in the `dist` folder
+   - Converts ES Module imports to CommonJS for Node.js compatibility
+   - Type checking happens during this step
+
+2. **Run Compiled Code**:
+   ```bash
+   npm start
+   ```
+   - Runs the compiled JavaScript from the `dist` folder
+   - No TypeScript or source files needed in production
+   - Uses only the TypeScript-derived JavaScript files
+
+### Docker Production Deployment
+
+When deploying with Docker, the multi-stage build handles this process:
+
+1. **Build Stage**:
+   - Installs all dependencies (including dev dependencies)
+   - Compiles TypeScript to JavaScript
+   - Runs linting and tests
+
+2. **Production Stage**:
+   - Uses a clean Node.js base image
+   - Installs only production dependencies
+   - Copies just the compiled JavaScript from the build stage
+   - Results in a smaller, more secure production image
+
+This approach ensures your production environment never needs to deal with TypeScript directly - it only runs the compiled JavaScript code, while still giving you all the benefits of TypeScript during development.
+
+## 3.3 Rollback Strategies
+
+### Handling Migration Rollbacks for Individual Files
+
+If issues arise with a specific migrated file:
+
+1. **Re-enable the JavaScript version temporarily**:
+   ```bash
+   git checkout HEAD~1 -- services/identity-service/src/domain/models/User.js
+   ```
+
+2. **Update imports to point back to the JavaScript version**:
+   ```javascript
+   // Revert to
+   const User = require('../../domain/models/User');
+   ```
+
+3. **Fix issues in the TypeScript file**
+   
+4. **Try the migration again**:
+   ```bash
+   git add services/identity-service/src/domain/models/User.ts
+   git commit -m "fix(identity): Fix TypeScript User model implementation"
+   ```
+
+---
+
+# 4. Identity Service Setup
+
+## 4.1 TypeScript Configuration
 
 Navigate to the identity service directory:
 ```bash
@@ -632,7 +711,7 @@ Create `tsconfig.json`:
   - Avoids processing third-party code
   - Prevents recompiling already compiled code
 
-### 1.2 Update package.json Scripts
+## 4.2 Update package.json Scripts
 
 ```json
 {
@@ -680,7 +759,7 @@ Create `tsconfig.json`:
   - Works with TypeScript files using ts-jest
   - **Run with:** `npm test`
 
-### 1.3 Install TypeScript Dependencies
+## 4.3 Install TypeScript Dependencies
 
 ```bash
 npm install --save-dev typescript @types/node @types/express @types/mongoose @types/bcrypt @types/jsonwebtoken @types/cors @types/helmet @types/cookie-parser ts-node nodemon eslint @typescript-eslint/parser @typescript-eslint/eslint-plugin jest ts-jest @types/jest
@@ -716,47 +795,11 @@ npm install --save-dev typescript @types/node @types/express @types/mongoose @ty
   - Enables TypeScript-aware testing
   - Supports mocking and test coverage
 
-### 1.3.1 Understanding TypeScript Strict Mode and Sensitive Data
+---
 
-Our TypeScript configuration includes `strict: true`, which provides strong type safety but introduces challenges when handling API responses with sensitive data. 
+# 5. Data Layer Migration
 
-#### The TypeScript Strict Mode Challenge:
-
-In strict mode, if a field is defined as required in an interface like our User model:
-
-```typescript
-interface IUser extends Document {
-  email: string;
-  password: string; // Required property!
-  // ...other fields
-}
-```
-
-TypeScript won't allow you to delete this property later:
-
-```typescript
-const user = await User.findById(id);
-const userObj = user.toObject();
-delete userObj.password; // ❌ Error: The operand of a 'delete' operator must be optional
-```
-
-This happens because deleting a required property would make the object inconsistent with its declared type.
-
-#### The Solution: Schema-Level Transforms
-
-The best practice for handling this in TypeScript + Mongoose is to implement password removal at the schema level using Mongoose's transform function:
-
-1. **Schema-level transform**: Automatically remove password during serialization
-2. **Type assertion**: Tell TypeScript about this with the `Omit` utility type
-
-This approach ensures:
-- **Security**: Password is always removed when serializing to JSON
-- **Type safety**: TypeScript knows the password is gone
-- **Consistency**: Implemented in one place, works everywhere
-
-We'll implement this in the User model in the next section.
-
-### 1.4 Migrate User Model
+## 5.1 Migrate User Model
 
 **JavaScript Version (Original):**
 ```javascript
@@ -1032,9 +1075,11 @@ console.log(userObj.password);
 const safeJson = JSON.stringify(userObj); // Password guaranteed to be excluded
 ```
 
-# Identity Service Migration - Part 2 (Controllers & Middleware)
+---
 
-## 2.1 Understanding the Parallel Files Approach
+# 6. Business Logic Migration
+
+## 6.1 Understanding the Parallel Files Approach
 
 After successfully migrating the User model to TypeScript, we need to convert the rest of the components that interact with it. This section will guide you through migrating controllers and middleware while maintaining a functioning application during the transition process.
 
@@ -1061,7 +1106,7 @@ Here's how the parallel files approach works:
    - Import paths refer to logical module locations, not file extensions
    - The Node.js module resolution system finds the right files
 
-## 2.2 Identify Files for Migration
+## 6.2 Identify Files for Migration
 
 First, identify all files that reference the User model. You can use either command line or IDE search:
 
@@ -1082,7 +1127,7 @@ Either method helps you locate:
 - Routes that use User-related controllers (`users.js`, `auth.js`)
 - Any other files that might depend on the User model
 
-## 2.3 Create TypeScript Versions of Files
+## 6.3 Create TypeScript Versions of Files
 
 Based on your search, create parallel TypeScript versions for each file that needs migration:
 
@@ -1096,7 +1141,7 @@ touch services/identity-service/src/api/routes/auth.ts
 
 > **Important**: Do NOT modify the original JavaScript files to import from TypeScript files. Keep JS and TS files isolated from each other.
 
-## 2.4 Migrate Auth Middleware
+## 6.4 Migrate Auth Middleware
 
 **Before vs After:**
 
@@ -1376,7 +1421,7 @@ app.get('/profile', authMiddleware, (req: AuthenticatedRequest, res: Response) =
 4. **Compile-Time Safety**: Catch errors during development, not in production
 5. **Better Developer Experience**: IDE support, autocompletion, and refactoring capabilities
 
-## 2.5 Controller Migration Examples
+## 6.5 Controller Migration Examples
 
 **Before vs After:**
 
@@ -1883,9 +1928,7 @@ export const updateProfile = async (
 7. **Secure by Design**: Type-safe data transformations eliminate security vulnerabilities
 8. **Development Experience**: IDE support, autocompletion, and refactoring capabilities accelerate development
 
----
-
-# 2.6 Auth Controller Migration
+## 6.6 Auth Controller Migration
 
 **Before vs After:**
 
@@ -2665,269 +2708,233 @@ The **speedometer** doesn't care what you do with the speed information - it jus
 9. **Separation of Concerns**: Keep infrastructure logic (error detection) separate from business logic
 10. **Code Reusability**: Define utility functions at module level to avoid duplication
 
-## 3.1 Migrate Routes
+---
 
-Route files tend to be simpler since they mostly define paths and connect them to controller methods. Let's see how to convert them to TypeScript.
+# 7. Application Integration
+
+## 7.1 Migrate Routes
+
+Route files connect HTTP endpoints to controller functions. They're typically simpler to migrate since they primarily define paths and middleware chains.
 
 ### Users Route Migration
 
-#### JavaScript File (Original - Remains Unchanged)
+#### JavaScript Version (Original - Keep During Migration)
+
 ```javascript
-// File path: services/identity-service/src/api/routes/users.js
+// 📄 src/api/routes/users.js
+const express = require('express');
+const router = express.Router();
+const { updateProfile, getUserById } = require('../controllers/userController');
+const { authMiddleware } = require('../middleware/auth');
 
-const express = require('express');                                       // [1]
+router.get('/:id', getUserById);
+router.put('/profile', authMiddleware, updateProfile);
 
-const router = express.Router();                                          // [2]
-
-const { updateProfile, getUserById } = require('../controllers/userController'); // [3]
-
-const { authMiddleware } = require('../middleware/auth');                 // [4]
-
-router.get('/:id', getUserById);                                          // [5]
-
-router.put('/profile', authMiddleware, updateProfile);                    // [6]
-
-module.exports = router;                                                  // [7]
+module.exports = router;
 ```
 
-#### TypeScript File (New)
+#### TypeScript Version (New Implementation)
+
 ```typescript
-// File path: services/identity-service/src/api/routes/users.ts
+// 📄 src/api/routes/users.ts
+import { Router } from 'express';
+import { updateProfile, getUserById } from '../controllers/userController';
+import { authMiddleware } from '../middleware/auth';
 
-import { Router } from 'express';                                         // [1]
-import { updateProfile, getUserById } from '../controllers/userController'; // [2]
-import { authMiddleware } from '../middleware/auth';                      // [3]
-
-const router = Router();                                                  // [4]
+const router = Router();
 
 // Public routes
-router.get('/:id', getUserById);                                          // [5]
+router.get('/:id', getUserById);
 
 // Protected routes
-router.put('/profile', authMiddleware, updateProfile);                    // [6]
+router.put('/profile', authMiddleware, updateProfile);
 
-export default router;                                                    // [7]
+export default router;
 ```
-
-#### What Changed & TypeScript Syntax Explained:
-
-**[1] Import Statements:**
-- JavaScript: `const express = require('express');`
-- TypeScript: `import { Router } from 'express';`
-- **What changed**:
-  - ES6 named import syntax replaces CommonJS require
-  - More selective importing - only Router instead of the whole express module
-  - TypeScript provides compile-time verification of imports
-
-**[2-3] Controller and Middleware Imports:**
-- JavaScript: 
-  - `const { updateProfile, getUserById } = require('../controllers/userController');`
-  - `const { authMiddleware } = require('../middleware/auth');`
-- TypeScript: 
-  - `import { updateProfile, getUserById } from '../controllers/userController';`
-  - `import { authMiddleware } from '../middleware/auth';`
-- **What improved**:
-  - ES6 import syntax is more consistent with modern JavaScript
-  - TypeScript validates these named exports exist in the imported modules
-  - IDE can provide better navigation and refactoring support
-
-**[4] Router Creation:**
-- JavaScript: `const router = express.Router();`
-- TypeScript: `const router = Router();`
-- **What changed**:
-  - Direct use of imported Router class
-  - TypeScript infers the correct type automatically
-  - All Express route methods are properly typed
-
-**[5-6] Route Definitions:**
-- JavaScript and TypeScript syntax is nearly identical
-- **What's better in TypeScript**:
-  - Route handlers are type-checked against Express middleware signature
-  - TypeScript ensures controllers match the expected `(req, res, next?)` pattern
-  - Path parameters (like `:id`) are available with type safety when used correctly
-
-**[7] Module Export:**
-- JavaScript: `module.exports = router;`
-- TypeScript: `export default router;`
-- **What changed**:
-  - ES6 default export syntax replaces CommonJS module.exports
-  - More consistent with modern JavaScript module patterns
-  - Importing modules will use `import usersRoutes from './api/routes/users';`
 
 ### Auth Route Migration
 
-#### JavaScript File (Original - Remains Unchanged)
+#### JavaScript Version (Original - Keep During Migration)
+
 ```javascript
-// File path: services/identity-service/src/api/routes/auth.js
+// 📄 src/api/routes/auth.js
+const express = require('express');
+const router = express.Router();
+const { register, login, getMe } = require('../controllers/authController');
+const { authMiddleware } = require('../middleware/auth');
 
-const express = require('express');                                    // [1]
+router.post('/register', register);
+router.post('/login', login);
+router.get('/me', authMiddleware, getMe);
 
-const router = express.Router();                                       // [2]
-
-const { register, login, getMe } = require('../controllers/authController'); // [3]
-
-const { authMiddleware } = require('../middleware/auth');              // [4]
-
-router.post('/register', register);                                    // [5]
-
-router.post('/login', login);                                          // [6]
-
-router.get('/me', authMiddleware, getMe);                              // [7]
-
-module.exports = router;                                               // [8]
+module.exports = router;
 ```
 
-#### TypeScript File (New)
+#### TypeScript Version (New Implementation)
+
 ```typescript
-// File path: services/identity-service/src/api/routes/auth.ts
+// 📄 src/api/routes/auth.ts
+import { Router } from 'express';
+import { register, login, getMe } from '../controllers/authController';
+import { authMiddleware } from '../middleware/auth';
 
-import { Router } from 'express';                                      // [1]
-import { register, login, getMe } from '../controllers/authController'; // [2]
-import { authMiddleware } from '../middleware/auth';                   // [3]
-
-const router = Router();                                               // [4]
+const router = Router();
 
 // Public routes
-router.post('/register', register);                                    // [5]
-router.post('/login', login);                                          // [6]
+router.post('/register', register);
+router.post('/login', login);
 
 // Protected routes
-router.get('/me', authMiddleware, getMe);                              // [7]
+router.get('/me', authMiddleware, getMe);
 
-export default router;                                                 // [8]
+export default router;
 ```
 
-#### What Changed & TypeScript Syntax Explained:
+### Key Changes in Route Migration
 
-**[1] Import Statements:**
-- JavaScript: `const express = require('express');`
-- TypeScript: `import { Router } from 'express';`
-- **What changed**:
-  - ES6 named import syntax replaces CommonJS require
-  - Only imports what's needed (Router) instead of whole express module
-  - More efficient and allows for better tree-shaking
+#### 1. Module System Updates
 
-**[2-3] Controller and Middleware Imports:**
-- JavaScript: 
-  - `const { register, login, getMe } = require('../controllers/authController');`
-  - `const { authMiddleware } = require('../middleware/auth');`
-- TypeScript: 
-  - `import { register, login, getMe } from '../controllers/authController';`
-  - `import { authMiddleware } from '../middleware/auth';`
-- **What improved**:
-  - ES6 import syntax
-  - TypeScript provides compile-time verification that these imports exist
-  - IDE provides better autocompletion and navigation
+**JavaScript:**
+```javascript
+const express = require('express');
+const router = express.Router();
+const { updateProfile, getUserById } = require('../controllers/userController');
+const { authMiddleware } = require('../middleware/auth');
+module.exports = router;
+```
 
-**[4] Router Creation:**
-- JavaScript: `const router = express.Router();`
-- TypeScript: `const router = Router();`
-- **What changed**:
-  - Direct use of imported Router class
-  - Type information is inferred automatically by TypeScript
-  - The router is properly typed with Express's route methods
+**TypeScript:**
+```typescript
+import { Router } from 'express';
+import { updateProfile, getUserById } from '../controllers/userController';
+import { authMiddleware } from '../middleware/auth';
+export default router;
+```
 
-**[5-7] Route Definitions:**
-- Nearly identical in both versions
-- **What's improved in TypeScript**:
-  - TypeScript validates that handlers have compatible signatures with Express middleware
-  - Ensures controller functions match `(req: Request, res: Response, next?: NextFunction) => void`
-  - Prevents type errors in route handlers
+**Improvements:**
+- **ES6 Module Syntax**: Consistent modern import/export system
+- **Selective Imports**: Only import Router instead of entire express module
+- **Type Checking**: TypeScript validates that imported functions exist
+- **Better Tree Shaking**: ES6 modules enable better build optimization
 
-**[8] Module Export:**
-- JavaScript: `module.exports = router;`
-- TypeScript: `export default router;`
-- **What changed**:
-  - ES6 default export syntax replaces CommonJS module.exports
-  - More consistent with modern JavaScript
-  - Better TypeScript module support and import/export tracking
-  - Other files will import with `import authRoutes from './api/routes/auth';`
+#### 2. Route Organization
 
-## 3.2 Migrate Main Application
+**Added Comments for Clarity:**
+```typescript
+// Public routes
+router.post('/register', register);
+router.post('/login', login);
+router.get('/:id', getUserById);
 
-Now let's migrate the main application file that brings everything together.
+// Protected routes
+router.get('/me', authMiddleware, getMe);
+router.put('/profile', authMiddleware, updateProfile);
+```
 
-#### JavaScript File (Original - Remains Unchanged)
+**Benefits:**
+- **Clear Security Boundaries**: Visual separation between public and protected routes
+- **Documentation**: Comments explain the security model
+- **Maintenance**: Easy to see which routes require authentication
+
+#### 3. Type Safety in Route Handlers
+
+While the route definitions look similar, TypeScript provides benefits:
+
+```typescript
+// TypeScript validates:
+// 1. Controller functions have correct middleware signature
+// 2. Middleware functions are compatible with Express
+// 3. Import paths resolve to actual functions
+router.get('/:id', getUserById); // ✅ Type-checked
+```
+
+## 7.2 Migrate Main Application
+
+The main application file brings together all components, middleware, and routes.
+
+### JavaScript Version (Original - Keep During Migration)
+
 ```javascript
 // 📄 src/index.js
-const express = require('express');                                  // [1]
-const cors = require('cors');                                        // [2]
-const helmet = require('helmet');                                    // [3]
-const morgan = require('morgan');                                    // [4]
-const connectDB = require('./infrastructure/db/mongoose');           // [5]
-const authRoutes = require('./api/routes/auth');                     // [6]
-const userRoutes = require('./api/routes/users');                    // [7]
+const express = require('express');
+const cors = require('cors');
+const helmet = require('helmet');
+const morgan = require('morgan');
+const connectDB = require('./infrastructure/db/mongoose');
+const authRoutes = require('./api/routes/auth');
+const userRoutes = require('./api/routes/users');
 
-const app = express();                                               // [8]
-const PORT = process.env.PORT || 3001;                               // [9]
+const app = express();
+const PORT = process.env.PORT || 3001;
 
-// Middleware                                                       
-app.use(cors());                                                     // [10]
-app.use(helmet());                                                   // [11]
-app.use(morgan('dev'));                                              // [12]
-app.use(express.json());                                             // [13]
+// Middleware
+app.use(cors());
+app.use(helmet());
+app.use(morgan('dev'));
+app.use(express.json());
 
-// Routes                                                           
-app.use('/api/auth', authRoutes);                                    // [14]
-app.use('/api/users', userRoutes);                                   // [15]
+// Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
 
 // Health check
-app.get('/health', (req, res) => {                                   // [16]
+app.get('/health', (req, res) => {
   res.status(200).json({ status: 'healthy' });
 });
 
-// Error handling                                                   
-app.use((err, req, res, next) => {                                   // [17]
+// Error handling
+app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({ message: 'Something went wrong!' });
 });
 
-// Start server                                                     
-connectDB().then(() => {                                              // [18]
+// Start server
+connectDB().then(() => {
   app.listen(PORT, () => {
     console.log(`Identity service running on port ${PORT}`);
   });
-}).catch(err => {                                                     // [19]
+}).catch(err => {
   console.error('Database connection failed:', err);
   process.exit(1);
 });
 ```
 
-#### TypeScript File (New)
+### TypeScript Version (New Implementation)
+
 ```typescript
 // 📄 src/index.ts
-import express, { Request, Response, NextFunction } from 'express';        // [1]
-import cors from 'cors';                                                   // [2]
-import helmet from 'helmet';                                               // [3]
-import morgan from 'morgan';                                               // [4]
-import { config } from 'dotenv';                                           // [5]
-import connectDB from './infrastructure/db/mongoose';                      // [6]
-import authRoutes from './api/routes/auth';                                // [7]
-import userRoutes from './api/routes/users';                               // [8]
+import express, { Request, Response, NextFunction } from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import morgan from 'morgan';
+import { config } from 'dotenv';
+import connectDB from './infrastructure/db/mongoose';
+import authRoutes from './api/routes/auth';
+import userRoutes from './api/routes/users';
 
 // Load environment variables
-config();                                                                  // [9]
+config();
 
-const app = express();                                                    // [10]
-const PORT: number = parseInt(process.env.PORT || '3001', 10);            // [11]
+const app = express();
+const PORT: number = parseInt(process.env.PORT || '3001', 10);
 
-// Middleware                                                           
-app.use(cors());                                                          // [12]
-app.use(helmet());                                                        // [13]
-app.use(morgan('dev'));                                                   // [14]
-app.use(express.json());                                                  // [15]
+// Middleware
+app.use(cors());
+app.use(helmet());
+app.use(morgan('dev'));
+app.use(express.json());
 
-// Routes                                                               
-app.use('/api/auth', authRoutes);                                         // [16]
-app.use('/api/users', userRoutes);                                        // [17]
+// Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
 
 // Health check
-app.get('/health', (_req: Request, res: Response): void => {              // [18]
+app.get('/health', (_req: Request, res: Response): void => {
   res.status(200).json({ status: 'healthy' });
 });
 
-// Error handling                                                       
-app.use((err: Error, _req: Request, res: Response, _next: NextFunction): void => {  // [19]
+// Error handling
+app.use((err: Error, _req: Request, res: Response, _next: NextFunction): void => {
   console.error('Unhandled error:', err);
   res.status(500).json({ 
     message: 'Something went wrong!',
@@ -2935,108 +2942,281 @@ app.use((err: Error, _req: Request, res: Response, _next: NextFunction): void =>
   });
 });
 
-// Connect to database and start server                                
-connectDB()                                                               // [20]
+// Connect to database and start server
+connectDB()
   .then(() => {
-    app.listen(PORT, (): void => {                                        // [21]
+    app.listen(PORT, (): void => {
       console.log(`Identity service running on port ${PORT}`);
     });
   })
-  .catch((err: Error) => {                                               // [22]
+  .catch((err: Error) => {
     console.error('Failed to start server:', err.message);
     process.exit(1);
   });
 
-export default app;                                                        // [23]
+export default app;
 ```
 
-#### What Changed & TypeScript Syntax Explained:
+### Key Improvements in Main Application
 
-**[1-4] ES6 Imports:**
-- JavaScript: `const module = require('path');`
-- TypeScript: `import module from 'path';` or `import { named } from 'path';`
-- **What's improved**:
-  - Consistent ES6 module syntax
-  - TypeScript type checking on imports
-  - Express types explicitly imported
+#### 1. Enhanced Imports and Environment Setup
 
-**[5] Environment Variables:**
-- New: `import { config } from 'dotenv';`
-- **Why**: Proper environment variable loading for TypeScript
+**JavaScript:**
+```javascript
+const express = require('express');
+// No dotenv import - relies on external loading
+```
 
-**[6-8] Module Imports:**
-- JavaScript: `const authRoutes = require('./api/routes/auth');`
-- TypeScript: `import authRoutes from './api/routes/auth';`
-- **What's improved**:
-  - ES6 import syntax
-  - TypeScript verifies exports exist
+**TypeScript:**
+```typescript
+import express, { Request, Response, NextFunction } from 'express';
+import { config } from 'dotenv';
 
-**[9] Dotenv Configuration:**
-- New: `config();`
-- **Why**: Ensures environment variables are loaded early
+// Load environment variables early
+config();
+```
 
-**[10] Express App:**
-- Same syntax, TypeScript infers type
-- **What's checked**:
-  - `app` has all Express methods
-  - Method signatures are validated
+**Improvements:**
+- **Explicit Environment Loading**: Ensures environment variables are available
+- **Type Imports**: Import Express types for middleware functions
+- **Consistent Module System**: All imports use ES6 syntax
 
-**[11] Port Configuration:**
-- JavaScript: `const PORT = process.env.PORT || 3001;`
-- TypeScript: `const PORT: number = parseInt(process.env.PORT || '3001', 10);`
-- **What's improved**:
-  - `process.env.PORT` is string | undefined
-  - Explicitly converts to number with parseInt
-  - Ensures PORT is always a number type
-  - Prevents "port must be number" errors
+#### 2. Type-Safe Port Configuration
 
-**[12-15] Middleware & Routes:**
-- Same syntax in both
-- **What TypeScript verifies**:
-  - Middleware functions have correct signature
-  - Route handlers are valid Express middleware
+**JavaScript:**
+```javascript
+const PORT = process.env.PORT || 3001;
+```
 
-**[16-17] Routes Setup:**
-- Same syntax, TypeScript checks types
-- **What's validated**:
-  - Routes are properly exported from modules
-  - Compatible with Express router type
+**TypeScript:**
+```typescript
+const PORT: number = parseInt(process.env.PORT || '3001', 10);
+```
 
-**[18] Health Check Route:**
-- JavaScript: `app.get('/health', (req, res) => {`
-- TypeScript: `app.get('/health', (_req: Request, res: Response): void => {`
-- **What's improved**:
-  - Typed parameters
-  - Return type annotation
-  - Unused parameter prefixed with underscore to avoid linting warnings
+**Benefits:**
+- **Type Safety**: `PORT` is guaranteed to be a number
+- **Explicit Conversion**: `parseInt()` ensures proper type conversion
+- **Runtime Safety**: Prevents "port must be number" errors
 
-**[19] Error Handler:**
-- JavaScript: `app.use((err, req, res, next) => {`
-- TypeScript: `app.use((err: Error, _req: Request, res: Response, _next: NextFunction): void => {`
-- **What's added**:
-  - Explicit parameter types
-  - `err: Error` - TypeScript knows error properties
-  - Full Express types for request, response, next
-  - Conditional error details based on environment
+#### 3. Typed Route Handlers
 
-**[20-22] Database Connection:**
-- More explicit Promise chain
-- **What TypeScript adds**:
-  - Type checking on Promise methods
-  - Typed error handling
-  - Explicit void return type on callbacks
+**JavaScript:**
+```javascript
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'healthy' });
+});
+```
 
-**[23] Module Export:**
-- New: `export default app;`
-- **Why**:
-  - Makes app available for testing
-  - Follows ES6 module pattern
+**TypeScript:**
+```typescript
+app.get('/health', (_req: Request, res: Response): void => {
+  res.status(200).json({ status: 'healthy' });
+});
+```
 
-## 3.3 Update Dockerfile for TypeScript
+**Improvements:**
+- **Explicit Types**: Parameters have defined types
+- **Return Type**: `: void` indicates no return value
+- **Unused Parameters**: Underscore prefix indicates intentionally unused parameters
+
+#### 4. Enhanced Error Handler
+
+**JavaScript:**
+```javascript
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ message: 'Something went wrong!' });
+});
+```
+
+**TypeScript:**
+```typescript
+app.use((err: Error, _req: Request, res: Response, _next: NextFunction): void => {
+  console.error('Unhandled error:', err);
+  res.status(500).json({ 
+    message: 'Something went wrong!',
+    error: process.env.NODE_ENV === 'development' ? err.message : undefined
+  });
+});
+```
+
+**Improvements:**
+- **Full Type Annotations**: All parameters properly typed
+- **Environment-Aware Errors**: Show detailed errors only in development
+- **Better Logging**: More informative error messages
+- **Security**: Hide error details in production
+
+#### 5. Improved Server Startup
+
+**JavaScript:**
+```javascript
+connectDB().then(() => {
+  app.listen(PORT, () => {
+    console.log(`Identity service running on port ${PORT}`);
+  });
+}).catch(err => {
+  console.error('Database connection failed:', err);
+  process.exit(1);
+});
+```
+
+**TypeScript:**
+```typescript
+connectDB()
+  .then(() => {
+    app.listen(PORT, (): void => {
+      console.log(`Identity service running on port ${PORT}`);
+    });
+  })
+  .catch((err: Error) => {
+    console.error('Failed to start server:', err.message);
+    process.exit(1);
+  });
+```
+
+**Improvements:**
+- **Explicit Promise Handling**: Clear error typing
+- **Better Error Messages**: More descriptive error context
+- **Type Safety**: Error parameter properly typed
+- **Return Type Annotations**: Callback functions have explicit void returns
+
+#### 6. Module Export for Testing
+
+**New Addition:**
+```typescript
+export default app;
+```
+
+**Benefits:**
+- **Testing Support**: Makes app available for unit/integration tests
+- **ES6 Module Pattern**: Consistent with TypeScript module system
+- **Reusability**: App can be imported in other contexts
+
+## 7.3 Middleware Integration
+
+### Middleware Chain Type Safety
+
+With TypeScript, the entire middleware chain is type-safe:
+
+```typescript
+// Each middleware is type-checked
+app.use(cors());                    // ✅ Validates cors middleware signature
+app.use(helmet());                  // ✅ Validates helmet middleware signature
+app.use(morgan('dev'));             // ✅ Validates morgan configuration
+app.use(express.json());            // ✅ Validates express built-in middleware
+app.use(authMiddleware);            // ✅ Validates custom middleware signature
+```
+
+**Benefits:**
+- **Signature Validation**: TypeScript ensures all middleware functions match Express middleware signature
+- **Configuration Checking**: Validates middleware options (like morgan format strings)
+- **Custom Middleware**: Ensures your custom middleware functions are compatible
+- **Runtime Safety**: Prevents middleware-related runtime errors
+
+### Custom Middleware Type Safety
+
+Your custom middleware automatically benefits from TypeScript:
+
+```typescript
+// auth.ts exports properly typed middleware
+export const authMiddleware = (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): void => {
+  // Implementation
+};
+
+// index.ts uses it with full type checking
+app.use('/api/users', authMiddleware, userRoutes);
+//                     ^^^^^^^^^^^^^
+//                     TypeScript validates this is valid middleware
+```
+
+### Error Handling Middleware
+
+TypeScript ensures your error handling middleware has the correct signature:
+
+```typescript
+// Error middleware must have exactly 4 parameters
+app.use((err: Error, req: Request, res: Response, next: NextFunction): void => {
+  // TypeScript enforces the error handler signature
+});
+```
+
+## 7.4 Cross-Service Type Sharing
+
+As you migrate more services, you'll want to share types between them for consistency.
+
+### Shared Authentication Types
+
+The `AuthenticatedRequest` interface can be reused across services:
+
+```typescript
+// identity-service/src/api/middleware/auth.ts
+export interface AuthenticatedRequest extends Request {
+  user?: {
+    userId: string;
+    email: string;
+  };
+}
+
+// event-service/src/api/controllers/eventController.ts (future migration)
+import { AuthenticatedRequest } from '../../shared/types/auth';
+
+export const createEvent = async (
+  req: AuthenticatedRequest & { body: CreateEventBody },
+  res: Response
+): Promise<void> => {
+  // Same user structure across all services
+  if (!req.user?.userId) {
+    res.status(401).json({ message: 'Not authorized' });
+    return;
+  }
+};
+```
+
+### Service-Specific vs Shared Types
+
+**Shared Types (Export for reuse):**
+- Authentication interfaces (`AuthenticatedRequest`)
+- Common error response formats
+- Shared business entity types (if services share data models)
+
+**Service-Specific Types (Keep internal):**
+- Request body interfaces specific to one service
+- Internal utility types
+- Service-specific error types
+
+### Creating a Shared Types Package
+
+For larger projects, consider creating a shared types package:
+
+```
+packages/
+├── shared-types/
+│   ├── src/
+│   │   ├── auth.ts
+│   │   ├── responses.ts
+│   │   └── index.ts
+│   ├── package.json
+│   └── tsconfig.json
+├── identity-service/
+├── event-service/
+└── invitation-service/
+```
+
+This allows consistent typing across all services while maintaining clear boundaries.
+
+---
+
+# 8. Deployment & Production
+
+## 8.1 Update Dockerfile for TypeScript
 
 Now let's update the Dockerfile to properly build and run the TypeScript application:
 
-#### Before (JavaScript):
+### Before (JavaScript):
 ```dockerfile
 FROM node:16-alpine
 
@@ -3052,7 +3232,7 @@ EXPOSE 3001
 CMD ["node", "src/index.js"]
 ```
 
-#### After (TypeScript):
+### After (TypeScript Multi-Stage Build):
 ```dockerfile
 # Build stage                                                      # [1]
 FROM node:16-alpine as builder                                     # [2]
@@ -3072,7 +3252,7 @@ EXPOSE 3001                                                        # [14]
 CMD ["npm", "start"]                                               # [15]
 ```
 
-#### What Changed & Dockerfile Syntax Explained:
+### What Changed & Dockerfile Syntax Explained:
 
 **[1] Multi-stage Build:**
 - New: `# Build stage`
@@ -3144,256 +3324,1283 @@ CMD ["npm", "start"]                                               # [15]
   - Script runs `node dist/index.js`
   - More flexible and configurable
 
-#### Benefits of Multi-stage Docker:
+### Benefits of Multi-stage Docker:
 - **Smaller Image**: Production image ~50% smaller
 - **Security**: No dev tools in production
 - **Build Isolation**: Build errors don't affect production
 - **CI/CD Friendly**: Separate build & run stages
 
-## 3.4 File Transition Strategy
+## 8.2 Multi-Stage Docker Build Benefits
 
-When migrating a file from JavaScript to TypeScript, follow this two-stage approach:
+### Image Size Comparison
 
-**Stage 1: Implementation**
-1. Create the new TypeScript file alongside the existing JavaScript file
-   ```bash
-   # Example: User model
-   touch services/identity-service/src/domain/models/User.ts
-   ```
-2. Implement the TypeScript version while keeping the JavaScript version untouched
-3. Test the TypeScript implementation thoroughly
-
-**Stage 2: Replacement**
-1. Update all import statements in other files to reference the TypeScript file
-   ```javascript
-   // Before
-   const User = require('../../domain/models/User');
-   
-   // After
-   import User from '../../domain/models/User';
-   ```
-2. Remove the JavaScript file once all references are updated
-   ```bash
-   git rm services/identity-service/src/domain/models/User.js
-   ```
-
-**Git Workflow for File Migration:**
-```bash
-# First commit the new TypeScript file
-git add services/identity-service/src/domain/models/User.ts
-git commit -m "feat(identity): Migrate User model to TypeScript"
-
-# After testing and confirming it works, remove the JS file
-git rm services/identity-service/src/domain/models/User.js
-git commit -m "chore(identity): Remove JavaScript User model after TypeScript migration"
+**Single-Stage (JavaScript):**
+```
+Base image: ~50MB
+Dependencies: ~150MB
+Source code: ~5MB
+Total: ~205MB
 ```
 
-**Handling Migration Rollbacks for Individual Files:**
+**Multi-Stage (TypeScript):**
+```
+Build stage: ~300MB (not included in final image)
+Production base: ~50MB
+Production dependencies: ~80MB
+Compiled code: ~3MB
+Total: ~133MB (35% smaller)
+```
 
-If issues arise with a specific migrated file:
+### Security Improvements
 
-1. Re-enable the JavaScript version temporarily:
-   ```bash
-   git checkout HEAD~1 -- services/identity-service/src/domain/models/User.js
-   ```
+**Eliminated from Production Image:**
+- TypeScript compiler
+- ESLint and linting tools
+- Jest testing framework
+- Development dependencies
+- Source TypeScript files
+- Build scripts and configuration
 
-2. Update imports to point back to the JavaScript version:
-   ```javascript
-   // Revert to
-   const User = require('../../domain/models/User');
-   ```
+**Included in Production Image:**
+- Node.js runtime
+- Production dependencies only
+- Compiled JavaScript
+- Package.json (for metadata)
 
-3. Fix issues in the TypeScript file
-   
-4. Try the migration again:
-   ```bash
-   git add services/identity-service/src/domain/models/User.ts
-   git commit -m "fix(identity): Fix TypeScript User model implementation"
-   ```
+### Build Performance
 
-This two-step approach gives you a clear migration path and provides a safety net during implementation.
+**Parallel Builds:**
+- Docker can cache layers independently
+- Build stage cached separately from production stage
+- Changes to source code don't invalidate production dependencies
 
-## 3.5 Development and Production Workflows
+**Layer Caching:**
+```dockerfile
+# This layer is cached until package.json changes
+COPY package*.json ./
+RUN npm ci --only=production
 
-During the TypeScript migration process, it's important to understand both your development workflow and how production deployment will work.
+# This layer rebuilds when source code changes
+COPY --from=builder /app/dist ./dist
+```
 
-**Development Workflow**
+## 8.3 Production Environment Setup
 
-When migrating to TypeScript, you'll have two ways to run your application during development:
+### Environment Variables for Production
 
-1. **Running Original JavaScript Files**:
-   ```bash
-   # Run the original JavaScript files
-   node src/index.js
-   ```
-   - This runs the untouched JavaScript version
-   - Useful as a reference point during migration
+Create a production-specific environment configuration:
 
-2. **Running TypeScript Files with ts-node**:
-   ```bash
-   # Run TypeScript files directly
-   npm run dev
-   ```
-   - Uses ts-node to run TypeScript without compilation
-   - Provides immediate feedback on type errors
-   - Restarts automatically when files change
-   - During migration, TypeScript files will import from other TypeScript files
-   - JavaScript files will continue to import from JavaScript files
-   - Great for active development and testing
+```bash
+# .env.production
+NODE_ENV=production
+PORT=3001
+MONGODB_URI=mongodb://mongo:27017/olive-table-prod
+JWT_SECRET=your-super-secure-production-jwt-secret
+LOG_LEVEL=info
+```
 
-**Production Workflow**
+### Production Package.json Scripts
 
-For production deployment, you'll use the compiled output:
+Update scripts for production deployment:
 
-1. **Build TypeScript to JavaScript**:
-   ```bash
-   npm run build
-   ```
-   - Compiles all TypeScript files to JavaScript in the `dist` folder
-   - Converts ES Module imports to CommonJS for Node.js compatibility
-   - Type checking happens during this step
+```json
+{
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "start:prod": "NODE_ENV=production node dist/index.js",
+    "dev": "nodemon --exec ts-node src/index.ts",
+    "test": "jest",
+    "test:ci": "jest --ci --coverage --watchAll=false",
+    "lint": "eslint . --ext .ts",
+    "lint:fix": "eslint . --ext .ts --fix",
+    "type-check": "tsc --noEmit"
+  }
+}
+```
 
-2. **Run Compiled Code**:
-   ```bash
-   npm start
-   ```
-   - Runs the compiled JavaScript from the `dist` folder
-   - No TypeScript or source files needed in production
-   - Uses only the TypeScript-derived JavaScript files
+**Production Script Benefits:**
+- **`start:prod`**: Explicitly sets production environment
+- **`test:ci`**: Optimized for CI/CD pipelines
+- **`type-check`**: Validates types without compilation
+- **`lint:fix`**: Automatically fixes linting issues
 
-**Docker Production Deployment**
+### Health Checks and Monitoring
 
-When deploying with Docker, the multi-stage build handles this process:
+Enhanced health check for production:
 
-1. **Build Stage**:
-   - Installs all dependencies (including dev dependencies)
-   - Compiles TypeScript to JavaScript
-   - Runs linting and tests
+```typescript
+// 📄 src/api/routes/health.ts
+import { Request, Response } from 'express';
+import mongoose from 'mongoose';
 
-2. **Production Stage**:
-   - Uses a clean Node.js base image
-   - Installs only production dependencies
-   - Copies just the compiled JavaScript from the build stage
-   - Results in a smaller, more secure production image
+interface HealthStatus {
+  status: 'healthy' | 'unhealthy';
+  timestamp: string;
+  services: {
+    database: 'connected' | 'disconnected';
+    memory: {
+      used: string;
+      total: string;
+    };
+  };
+}
 
-This approach ensures your production environment never needs to deal with TypeScript directly - it only runs the compiled JavaScript code, while still giving you all the benefits of TypeScript during development.
+export const healthCheck = async (_req: Request, res: Response): Promise<void> => {
+  const memoryUsage = process.memoryUsage();
+  
+  const healthStatus: HealthStatus = {
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    services: {
+      database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+      memory: {
+        used: `${Math.round(memoryUsage.heapUsed / 1024 / 1024)}MB`,
+        total: `${Math.round(memoryUsage.heapTotal / 1024 / 1024)}MB`
+      }
+    }
+  };
 
-## 3.6 Testing the Service
+  // Set unhealthy if database is disconnected
+  if (healthStatus.services.database === 'disconnected') {
+    healthStatus.status = 'unhealthy';
+    res.status(503);
+  }
 
-### Unit Testing with Jest
-
-Configure Jest for TypeScript in `jest.config.js`:
-
-```javascript
-module.exports = {
-  preset: 'ts-jest',
-  testEnvironment: 'node',
-  roots: ['<rootDir>/src'],
-  transform: {
-    '^.+\\.tsx?$': 'ts-jest',
-  },
-  testRegex: '(/__tests__/.*|(\\.|/)(test|spec))\\.tsx?$',
-  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
-  collectCoverage: true,
-  coverageDirectory: './coverage',
+  res.json(healthStatus);
 };
 ```
 
-Create a test for the User model:
+### Production Logging
+
+Set up structured logging for production:
+
+```typescript
+// 📄 src/utils/logger.ts
+import { createLogger, format, transports } from 'winston';
+
+const logger = createLogger({
+  level: process.env.LOG_LEVEL || 'info',
+  format: format.combine(
+    format.timestamp(),
+    format.errors({ stack: true }),
+    format.json()
+  ),
+  defaultMeta: { service: 'identity-service' },
+  transports: [
+    new transports.File({ filename: 'logs/error.log', level: 'error' }),
+    new transports.File({ filename: 'logs/combined.log' }),
+  ],
+});
+
+// In development, also log to console
+if (process.env.NODE_ENV !== 'production') {
+  logger.add(new transports.Console({
+    format: format.simple()
+  }));
+}
+
+export default logger;
+```
+
+## 8.4 Docker Compose Integration
+
+Update your docker-compose.yml for the TypeScript service:
+
+```yaml
+# docker-compose.yml
+version: '3.8'
+
+services:
+  identity-service:
+    build:
+      context: ./services/identity-service
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - MONGODB_URI=mongodb://mongo:27017/olive-table
+      - JWT_SECRET=${JWT_SECRET}
+    depends_on:
+      - mongo
+    volumes:
+      - ./logs/identity:/app/logs
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  mongo:
+    image: mongo:5
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    restart: unless-stopped
+
+volumes:
+  mongo_data:
+```
+
+**Docker Compose Benefits:**
+- **Health Checks**: Automatic service health monitoring
+- **Log Volumes**: Persistent logging outside containers
+- **Environment Management**: Centralized environment variable handling
+- **Service Dependencies**: Ensures database starts before application
+- **Restart Policies**: Automatic recovery from failures
+
+---
+
+# 9. Testing & Validation
+
+## 9.1 Unit Testing Configuration
+
+### Jest Setup for TypeScript
+
+Create a comprehensive Jest configuration:
+
+```javascript
+// jest.config.js
+module.exports = {
+  // Use ts-jest preset for TypeScript support
+  preset: 'ts-jest',
+  testEnvironment: 'node',
+  
+  // Test file locations
+  roots: ['<rootDir>/src'],
+  testMatch: [
+    '**/__tests__/**/*.ts',
+    '**/?(*.)+(spec|test).ts'
+  ],
+  
+  // TypeScript transformation
+  transform: {
+    '^.+\\.ts: 'ts-jest',
+  },
+  
+  // File extensions to consider
+  moduleFileExtensions: ['ts', 'js', 'json', 'node'],
+  
+  // Coverage configuration
+  collectCoverage: true,
+  coverageDirectory: './coverage',
+  coverageReporters: ['text', 'lcov', 'html'],
+  collectCoverageFrom: [
+    'src/**/*.ts',
+    '!src/**/*.test.ts',
+    '!src/**/*.spec.ts',
+    '!src/types/**/*.ts'
+  ],
+  
+  // Coverage thresholds
+  coverageThreshold: {
+    global: {
+      branches: 70,
+      functions: 70,
+      lines: 70,
+      statements: 70
+    }
+  },
+  
+  // Setup files
+  setupFilesAfterEnv: ['<rootDir>/src/test/setup.ts'],
+  
+  // Module path mapping
+  moduleNameMapping: {
+    '^@/(.*): '<rootDir>/src/$1'
+  }
+};
+```
+
+### Test Setup File
+
+```typescript
+// 📄 src/test/setup.ts
+import { MongoMemoryServer } from 'mongodb-memory-server';
+import mongoose from 'mongoose';
+
+let mongoServer: MongoMemoryServer;
+
+// Setup before all tests
+beforeAll(async () => {
+  mongoServer = await MongoMemoryServer.create();
+  const mongoUri = mongoServer.getUri();
+  await mongoose.connect(mongoUri);
+});
+
+// Cleanup after all tests
+afterAll(async () => {
+  await mongoose.disconnect();
+  await mongoServer.stop();
+});
+
+// Clean database after each test
+afterEach(async () => {
+  const collections = mongoose.connection.collections;
+  for (const key in collections) {
+    const collection = collections[key];
+    await collection.deleteMany({});
+  }
+});
+```
+
+### Model Testing Example
 
 ```typescript
 // 📄 src/domain/models/User.test.ts
-import mongoose from 'mongoose';
 import User, { IUser } from './User';
-
-// Mock mongoose functions
-jest.mock('mongoose', () => ({
-  Schema: jest.fn().mockImplementation(() => ({
-    pre: jest.fn().mockReturnThis(),
-    methods: {},
-  })),
-  model: jest.fn().mockReturnValue({
-    findOne: jest.fn(),
-  }),
-}));
+import { Types } from 'mongoose';
 
 describe('User Model', () => {
-  it('should validate a valid user', async () => {
-    const userData = {
-      email: 'test@example.com',
-      password: 'password123',
-      firstName: 'Test',
-      lastName: 'User',
-    };
-    
-    const userInstance = new User(userData);
-    
-    // Mock save method
-    userInstance.save = jest.fn().mockResolvedValue(userInstance);
-    
-    await expect(userInstance.save()).resolves.toBeDefined();
+  describe('User Creation', () => {
+    it('should create a valid user with required fields', async () => {
+      const userData = {
+        email: 'test@example.com',
+        password: 'password123',
+        firstName: 'John',
+        lastName: 'Doe',
+      };
+
+      const user = new User(userData);
+      const savedUser = await user.save();
+
+      expect(savedUser).toBeDefined();
+      expect(savedUser.email).toBe(userData.email);
+      expect(savedUser.firstName).toBe(userData.firstName);
+      expect(savedUser.lastName).toBe(userData.lastName);
+      expect(savedUser.password).not.toBe(userData.password); // Should be hashed
+      expect(savedUser._id).toBeInstanceOf(Types.ObjectId);
+    });
+
+    it('should fail validation for missing required fields', async () => {
+      const invalidUserData = {
+        email: 'test@example.com',
+        // Missing required fields
+      };
+
+      const user = new User(invalidUserData);
+      
+      await expect(user.save()).rejects.toThrow();
+    });
+
+    it('should enforce unique email constraint', async () => {
+      const userData = {
+        email: 'duplicate@example.com',
+        password: 'password123',
+        firstName: 'John',
+        lastName: 'Doe',
+      };
+
+      // Create first user
+      const user1 = new User(userData);
+      await user1.save();
+
+      // Try to create second user with same email
+      const user2 = new User(userData);
+      await expect(user2.save()).rejects.toThrow();
+    });
   });
-  
-  it('should match password correctly', async () => {
-    // Implement password matching test
+
+  describe('Password Handling', () => {
+    it('should hash password before saving', async () => {
+      const userData = {
+        email: 'test@example.com',
+        password: 'plainPassword',
+        firstName: 'John',
+        lastName: 'Doe',
+      };
+
+      const user = new User(userData);
+      await user.save();
+
+      expect(user.password).not.toBe('plainPassword');
+      expect(user.password.length).toBeGreaterThan(20);
+    });
+
+    it('should correctly validate passwords', async () => {
+      const userData = {
+        email: 'test@example.com',
+        password: 'correctPassword',
+        firstName: 'John',
+        lastName: 'Doe',
+      };
+
+      const user = new User(userData);
+      await user.save();
+
+      const isValidPassword = await user.matchPassword('correctPassword');
+      const isInvalidPassword = await user.matchPassword('wrongPassword');
+
+      expect(isValidPassword).toBe(true);
+      expect(isInvalidPassword).toBe(false);
+    });
+  });
+
+  describe('Security Transforms', () => {
+    it('should remove password when converting to object', async () => {
+      const userData = {
+        email: 'test@example.com',
+        password: 'password123',
+        firstName: 'John',
+        lastName: 'Doe',
+      };
+
+      const user = new User(userData);
+      await user.save();
+
+      const userObject = user.toObject();
+      
+      expect(userObject.password).toBeUndefined();
+      expect(userObject.email).toBe(userData.email);
+      expect(userObject.firstName).toBe(userData.firstName);
+    });
+
+    it('should remove password when converting to JSON', async () => {
+      const userData = {
+        email: 'test@example.com',
+        password: 'password123',
+        firstName: 'John',
+        lastName: 'Doe',
+      };
+
+      const user = new User(userData);
+      await user.save();
+
+      const userJson = JSON.parse(JSON.stringify(user));
+      
+      expect(userJson.password).toBeUndefined();
+      expect(userJson.email).toBe(userData.email);
+    });
   });
 });
 ```
 
-### Manual Testing
+## 9.2 Integration Testing
+
+### Controller Integration Tests
+
+```typescript
+// 📄 src/api/controllers/authController.test.ts
+import request from 'supertest';
+import app from '../../index';
+import User from '../../domain/models/User';
+
+describe('Auth Controller Integration', () => {
+  describe('POST /api/auth/register', () => {
+    it('should register a new user successfully', async () => {
+      const userData = {
+        email: 'newuser@example.com',
+        password: 'password123',
+        firstName: 'New',
+        lastName: 'User',
+      };
+
+      const response = await request(app)
+        .post('/api/auth/register')
+        .send(userData)
+        .expect(201);
+
+      expect(response.body.message).toBe('User registered successfully. Please log in.');
+      
+      // Verify user was created in database
+      const createdUser = await User.findOne({ email: userData.email });
+      expect(createdUser).toBeDefined();
+      expect(createdUser?.firstName).toBe(userData.firstName);
+    });
+
+    it('should reject registration with duplicate email', async () => {
+      const userData = {
+        email: 'duplicate@example.com',
+        password: 'password123',
+        firstName: 'First',
+        lastName: 'User',
+      };
+
+      // Create first user
+      await request(app)
+        .post('/api/auth/register')
+        .send(userData)
+        .expect(201);
+
+      // Try to register with same email
+      const response = await request(app)
+        .post('/api/auth/register')
+        .send(userData)
+        .expect(400);
+
+      expect(response.body.message).toBe('User already exists');
+    });
+
+    it('should validate required fields', async () => {
+      const incompleteData = {
+        email: 'incomplete@example.com',
+        // Missing required fields
+      };
+
+      const response = await request(app)
+        .post('/api/auth/register')
+        .send(incompleteData)
+        .expect(400);
+
+      expect(response.body.message).toContain('validation');
+    });
+  });
+
+  describe('POST /api/auth/login', () => {
+    beforeEach(async () => {
+      // Create a test user
+      const userData = {
+        email: 'testuser@example.com',
+        password: 'password123',
+        firstName: 'Test',
+        lastName: 'User',
+      };
+
+      await request(app)
+        .post('/api/auth/register')
+        .send(userData);
+    });
+
+    it('should login with valid credentials', async () => {
+      const loginData = {
+        email: 'testuser@example.com',
+        password: 'password123',
+      };
+
+      const response = await request(app)
+        .post('/api/auth/login')
+        .send(loginData)
+        .expect(200);
+
+      expect(response.body.token).toBeDefined();
+      expect(response.body.user).toBeDefined();
+      expect(response.body.user.email).toBe(loginData.email);
+      expect(response.body.user.password).toBeUndefined(); // Should not include password
+    });
+
+    it('should reject invalid credentials', async () => {
+      const invalidLoginData = {
+        email: 'testuser@example.com',
+        password: 'wrongpassword',
+      };
+
+      const response = await request(app)
+        .post('/api/auth/login')
+        .send(invalidLoginData)
+        .expect(401);
+
+      expect(response.body.message).toBe('Invalid credentials');
+      expect(response.body.token).toBeUndefined();
+    });
+
+    it('should reject non-existent user', async () => {
+      const nonExistentUserData = {
+        email: 'nonexistent@example.com',
+        password: 'password123',
+      };
+
+      const response = await request(app)
+        .post('/api/auth/login')
+        .send(nonExistentUserData)
+        .expect(401);
+
+      expect(response.body.message).toBe('Invalid credentials');
+    });
+  });
+
+  describe('GET /api/auth/me', () => {
+    let authToken: string;
+
+    beforeEach(async () => {
+      // Register and login to get auth token
+      const userData = {
+        email: 'authuser@example.com',
+        password: 'password123',
+        firstName: 'Auth',
+        lastName: 'User',
+      };
+
+      await request(app)
+        .post('/api/auth/register')
+        .send(userData);
+
+      const loginResponse = await request(app)
+        .post('/api/auth/login')
+        .send({ email: userData.email, password: userData.password });
+
+      authToken = loginResponse.body.token;
+    });
+
+    it('should return user profile with valid token', async () => {
+      const response = await request(app)
+        .get('/api/auth/me')
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
+
+      expect(response.body.email).toBe('authuser@example.com');
+      expect(response.body.firstName).toBe('Auth');
+      expect(response.body.password).toBeUndefined();
+    });
+
+    it('should reject request without token', async () => {
+      const response = await request(app)
+        .get('/api/auth/me')
+        .expect(401);
+
+      expect(response.body.message).toContain('authorization');
+    });
+
+    it('should reject request with invalid token', async () => {
+      const response = await request(app)
+        .get('/api/auth/me')
+        .set('Authorization', 'Bearer invalidtoken')
+        .expect(401);
+
+      expect(response.body.message).toContain('token');
+    });
+  });
+});
+```
+
+### Test Utilities
+
+Create helper functions for testing:
+
+```typescript
+// 📄 src/test/helpers.ts
+import request from 'supertest';
+import app from '../index';
+import { IUser } from '../domain/models/User';
+
+interface CreateUserData {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+}
+
+interface AuthenticatedUser {
+  user: Omit<IUser, 'password'>;
+  token: string;
+}
+
+export const createTestUser = async (userData: CreateUserData): Promise<void> => {
+  await request(app)
+    .post('/api/auth/register')
+    .send(userData)
+    .expect(201);
+};
+
+export const loginTestUser = async (email: string, password: string): Promise<AuthenticatedUser> => {
+  const response = await request(app)
+    .post('/api/auth/login')
+    .send({ email, password })
+    .expect(200);
+
+  return {
+    user: response.body.user,
+    token: response.body.token,
+  };
+};
+
+export const createAndLoginTestUser = async (userData: CreateUserData): Promise<AuthenticatedUser> => {
+  await createTestUser(userData);
+  return loginTestUser(userData.email, userData.password);
+};
+
+export const makeAuthenticatedRequest = (token: string) => {
+  return request(app).set('Authorization', `Bearer ${token}`);
+};
+```
+
+## 9.3 Manual Testing Procedures
+
+### Local Development Testing
+
+1. **Build and Start the Service:**
+   ```bash
+   # Build TypeScript
+   npm run build
+   
+   # Start the service
+   npm start
+   ```
+
+2. **Health Check:**
+   ```bash
+   curl http://localhost:3001/health
+   # Expected: {"status":"healthy","timestamp":"...","services":{...}}
+   ```
+
+3. **User Registration:**
+   ```bash
+   curl -X POST http://localhost:3001/api/auth/register \
+     -H "Content-Type: application/json" \
+     -d '{
+       "email": "test@example.com",
+       "password": "password123",
+       "firstName": "Test",
+       "lastName": "User"
+     }'
+   # Expected: {"message":"User registered successfully. Please log in."}
+   ```
+
+4. **User Login:**
+   ```bash
+   curl -X POST http://localhost:3001/api/auth/login \
+     -H "Content-Type: application/json" \
+     -d '{
+       "email": "test@example.com",
+       "password": "password123"
+     }'
+   # Expected: {"token":"...","user":{...}} (no password in response)
+   ```
+
+5. **Authenticated Endpoints:**
+   ```bash
+   # Get user profile (replace TOKEN with actual token from login)
+   curl -X GET http://localhost:3001/api/auth/me \
+     -H "Authorization: Bearer TOKEN"
+   # Expected: User profile without password
+   ```
+
+### Docker Testing
+
+1. **Build Docker Image:**
+   ```bash
+   docker build -t identity-service .
+   ```
+
+2. **Run with Docker Compose:**
+   ```bash
+   docker-compose up identity-service
+   ```
+
+3. **Test Container Health:**
+   ```bash
+   docker-compose exec identity-service curl http://localhost:3001/health
+   ```
+
+### Environment Testing
+
+Test different environments:
+
+1. **Development Environment:**
+   ```bash
+   NODE_ENV=development npm run dev
+   ```
+
+2. **Production Environment:**
+   ```bash
+   NODE_ENV=production npm start
+   ```
+
+3. **Test Environment:**
+   ```bash
+   NODE_ENV=test npm test
+   ```
+
+## 9.4 Troubleshooting Common Issues
+
+### TypeScript Compilation Errors
+
+**Issue: "Cannot find module" errors**
+```
+error TS2307: Cannot find module '../controllers/userController'
+```
+
+**Solutions:**
+1. Check file paths are correct relative to importing file
+2. Ensure file extensions are omitted in imports
+3. Verify tsconfig.json `baseUrl` and `paths` configuration
+4. Check that the imported file exists and exports the expected items
+
+**Issue: Type errors in strict mode**
+```
+error TS2322: Type 'string | undefined' is not assignable to type 'string'
+```
+
+**Solutions:**
+1. Add null checks: `if (value) { ... }`
+2. Use optional chaining: `object?.property`
+3. Use type assertions carefully: `value as string`
+4. Add default values: `value || 'default'`
+
+### Runtime Errors
+
+**Issue: Import/export errors at runtime**
+```
+SyntaxError: Cannot use import statement outside a module
+```
+
+**Solutions:**
+1. Ensure you're running compiled JavaScript, not TypeScript
+2. Check package.json `type` field configuration
+3. Verify tsconfig.json `module` is set to "commonjs"
+4. Use `npm run build` before `npm start`
+
+**Issue: Environment variable not found**
+```
+Error: JWT_SECRET environment variable not set
+```
+
+**Solutions:**
+1. Create `.env` file with required variables
+2. Ensure `dotenv` is loaded early in application
+3. Check environment variable names match exactly
+4. Verify `.env` file is in correct location
+
+### Database Connection Issues
+
+**Issue: MongoDB connection failed**
+```
+Error: connect ECONNREFUSED 127.0.0.1:27017
+```
+
+**Solutions:**
+1. Start MongoDB service: `mongod` or `brew services start mongodb-community`
+2. Check MongoDB URI in environment variables
+3. Verify network connectivity
+4. Check MongoDB logs for errors
+
+### Docker Issues
+
+**Issue: Docker build fails**
+```
+Error: npm install failed
+```
+
+**Solutions:**
+1. Clear Docker cache: `docker system prune`
+2. Check Dockerfile syntax
+3. Verify package.json and package-lock.json are copied
+4. Ensure network connectivity for npm install
+
+**Issue: Container health check fails**
+```
+Health check failed
+```
+
+**Solutions:**
+1. Check application is binding to 0.0.0.0, not localhost
+2. Verify health endpoint is accessible
+3. Check container logs: `docker logs <container-id>`
+4. Test health endpoint manually inside container
+
+### Testing Issues
+
+**Issue: Tests fail with database errors**
+```
+Error: MongoMemoryServer failed to start
+```
+
+**Solutions:**
+1. Install mongodb-memory-server: `npm install -D mongodb-memory-server`
+2. Increase test timeout in Jest configuration
+3. Check system resources (memory, disk space)
+4. Clear Jest cache: `npx jest --clearCache`
+
+**Issue: Type errors in test files**
+```
+error TS2339: Property 'toBeDefined' does not exist
+```
+
+**Solutions:**
+1. Install Jest types: `npm install -D @types/jest`
+2. Add Jest types to tsconfig.json includes
+3. Import test utilities correctly
+4. Check jest.config.js setup
+
+### Performance Issues
+
+**Issue: Slow TypeScript compilation**
+```
+Compilation takes several minutes
+```
+
+**Solutions:**
+1. Enable `skipLibCheck: true` in tsconfig.json
+2. Use `incremental: true` for faster rebuilds
+3. Consider using `swc` instead of `tsc` for faster builds
+4. Exclude unnecessary files from compilation
+
+**Issue: Large Docker images**
+```
+Docker image is over 500MB
+```
+
+**Solutions:**
+1. Use multi-stage builds (already implemented)
+2. Use `.dockerignore` to exclude unnecessary files
+3. Consider Alpine-based images
+4. Remove dev dependencies from production stage
+
+### Validation Commands
+
+Run these commands to validate your migration:
 
 ```bash
-# Build the TypeScript code
+# TypeScript compilation
 npm run build
-```
-- **What happens**:
-  - TypeScript compiler reads `tsconfig.json`
-  - Compiles all `.ts` files in `src/` to `.js` in `dist/`
-  - Creates source maps for debugging
-  - Reports any compilation errors
 
-```bash
-# Run unit tests
-npm test
-```
-- **What happens**:
-  - Jest runs all test files
-  - Tests TypeScript code directly
-  - Reports test coverage and failures
-
-```bash
-# Run in development mode
-npm run dev
-```
-- **What happens**:
-  - Uses `nodemon` to watch for file changes
-  - Runs `ts-node` to execute TypeScript directly
-  - No build step needed (compiles on-the-fly)
-  - Restarts automatically on changes
-
-```bash
-# Lint for errors
+# Code quality
 npm run lint
+npm run type-check
+
+# Testing
+npm test
+npm run test:ci
+
+# Docker validation
+docker build -t identity-service .
+docker run -p 3001:3001 identity-service
+
+# Manual endpoint testing
+curl http://localhost:3001/health
+curl -X POST http://localhost:3001/api/auth/register -H "Content-Type: application/json" -d '{"email":"test@example.com","password":"password123","firstName":"Test","lastName":"User"}'
 ```
-- **What happens**:
-  - Runs ESLint with TypeScript parser
-  - Checks for code style issues
-  - Finds potential bugs
-  - Reports unused variables/imports
+
+---
+
+# 10. Service Completion & Next Steps
+
+## 10.1 Identity Service Validation
+
+### Final Checklist
+
+Before considering your Identity Service migration complete, verify these items:
+
+#### ✅ **TypeScript Configuration**
+- [ ] `tsconfig.json` configured with strict mode
+- [ ] All TypeScript files compile without errors: `npm run build`
+- [ ] ESLint passes without errors: `npm run lint`
+- [ ] Type checking passes: `npm run type-check`
+
+#### ✅ **Core Functionality**
+- [ ] User registration works with proper validation
+- [ ] User login returns JWT token and sanitized user data
+- [ ] JWT authentication middleware validates tokens correctly
+- [ ] Password hashing works automatically on user save
+- [ ] Schema transforms remove passwords from all responses
+- [ ] All routes respond correctly to valid and invalid requests
+
+#### ✅ **Security Implementation**
+- [ ] Passwords are never returned in API responses
+- [ ] JWT tokens expire appropriately (24h default)
+- [ ] Error messages don't leak sensitive information
+- [ ] Input validation prevents malicious data
+- [ ] Environment variables are validated at startup
+
+#### ✅ **Testing Coverage**
+- [ ] Unit tests pass: `npm test`
+- [ ] Integration tests cover all endpoints
+- [ ] Test coverage meets threshold (70%+)
+- [ ] Manual testing procedures documented and verified
+
+#### ✅ **Production Readiness**
+- [ ] Docker build succeeds: `docker build -t identity-service .`
+- [ ] Multi-stage Docker build optimizes image size
+- [ ] Health check endpoint returns proper status
+- [ ] Logging is structured and informative
+- [ ] Environment configuration works for different environments
+
+#### ✅ **Documentation & Code Quality**
+- [ ] Code is well-commented with TypeScript interfaces serving as documentation
+- [ ] Error handling is consistent across all controllers
+- [ ] Type safety is maintained throughout the codebase
+- [ ] Git history shows clean migration commits
+
+### Validation Commands
+
+Run these commands to validate your migration:
 
 ```bash
-# Test endpoints
-curl http://localhost:3001/health
-```
-- **What to verify**:
-  - Service responds with `{"status": "healthy"}`
-  - No TypeScript compilation errors in console
-  - Database connection successful
-  - All routes accessible
+# TypeScript compilation
+npm run build
 
-**Troubleshooting Tips:**
-- **Compilation errors**: Check interface definitions match usage
-- **Import errors**: Verify relative paths are correct
-- **Type conflicts**: Ensure you've installed all `@types/` packages
-- **Docker issues**: Make sure `dist/` folder exists after build
-- **Runtime errors**: Check for `any` types that might be hiding issues
+# Code quality
+npm run lint
+npm run type-check
+
+# Testing
+npm test
+npm run test:ci
+
+# Docker validation
+docker build -t identity-service .
+docker run -p 3001:3001 identity-service
+
+# Manual endpoint testing
+curl http://localhost:3001/health
+curl -X POST http://localhost:3001/api/auth/register -H "Content-Type: application/json" -d '{"email":"test@example.com","password":"password123","firstName":"Test","lastName":"User"}'
+```
+
+## 10.2 Key Takeaways & Lessons Learned
+
+### Migration Strategy Insights
+
+**1. Parallel Files Approach Success:**
+- ✅ **Reduced Risk**: Maintaining working JavaScript versions during migration eliminated downtime
+- ✅ **Incremental Testing**: Each file could be tested independently before integration
+- ✅ **Easy Rollback**: Issues with specific files didn't block entire migration
+- ✅ **Team Collaboration**: Multiple developers could work on different files simultaneously
+
+**2. Type Safety Benefits Realized:**
+- ✅ **Compile-Time Error Detection**: Caught numerous potential runtime errors during development
+- ✅ **Improved Developer Experience**: IDE autocompletion and navigation significantly improved productivity
+- ✅ **Self-Documenting Code**: Interfaces and types serve as living documentation
+- ✅ **Refactoring Confidence**: Changes could be made with confidence that types would catch breaking changes
+
+**3. Security Improvements:**
+- ✅ **Schema-Level Transforms**: Centralizing password removal eliminated security vulnerabilities
+- ✅ **Type-Safe Environment Validation**: Explicit environment variable checking prevented configuration errors
+- ✅ **JWT Handling**: Improved token validation and error handling increased security
+
+### Technical Patterns That Worked Well
+
+**1. Error Handling Separation:**
+```typescript
+// Infrastructure concern (reusable)
+const hasErrorCode = (err: unknown): err is { code: number } => { ... };
+
+// Business concern (context-specific)
+if (hasErrorCode(error) && error.code === 11000) {
+  res.status(400).json({ message: 'User already exists' });
+}
+```
+
+**2. Interface Design:**
+```typescript
+// Shared interfaces (exported for reuse)
+export interface AuthenticatedRequest extends Request { ... }
+
+// Controller-specific interfaces (kept internal)
+interface RegisterBody { ... }
+```
+
+**3. Type-Safe Request Handling:**
+```typescript
+// Generic Request typing for route parameters
+export const getUserById = async (
+  req: Request<{ id: string }>,
+  res: Response
+): Promise<void> => { ... }
+
+// Intersection types for complex requests
+export const updateProfile = async (
+  req: AuthenticatedRequest & { body: UpdateProfileBody },
+  res: Response
+): Promise<void> => { ... }
+```
+
+### Performance Improvements
+
+**Before Migration (JavaScript):**
+- Manual password removal in each controller
+- No compile-time error detection
+- Larger Docker images with dev dependencies
+- Runtime type checking and validation
+
+**After Migration (TypeScript):**
+- Automatic password removal via schema transforms
+- Compile-time error detection and prevention
+- 35% smaller production Docker images
+- Type safety eliminates many runtime checks
+
+### Development Workflow Improvements
+
+**Before:** Manual type checking, potential runtime errors, inconsistent error handling
+**After:** Automatic type validation, compile-time error detection, consistent patterns
+
+```bash
+# Development workflow now includes:
+npm run dev        # TypeScript compilation with hot reload
+npm run lint       # Code quality validation
+npm run type-check # Type validation without compilation
+npm run test       # Type-safe unit and integration tests
+```
+
+## 10.3 Preparing for Event Service Migration
+
+### Applying Lessons Learned
+
+When migrating the Event Service, apply these patterns from the Identity Service:
+
+**1. Reuse Established Patterns:**
+- Copy `tsconfig.json` configuration
+- Use the same error handling patterns
+- Implement similar schema-level security transforms
+- Follow the same testing structure
+
+**2. Import Shared Types:**
+```typescript
+// In event-service controllers
+import { AuthenticatedRequest } from '../../../identity-service/src/api/middleware/auth';
+
+export const createEvent = async (
+  req: AuthenticatedRequest & { body: CreateEventBody },
+  res: Response
+): Promise<void> => {
+  // Same authentication pattern
+  if (!req.user?.userId) {
+    res.status(401).json({ message: 'Not authorized' });
+    return;
+  }
+  // ... event creation logic
+};
+```
+
+**3. Migration Order for Event Service:**
+1. Setup (tsconfig.json, package.json, dependencies)
+2. Event model migration (following User model patterns)
+3. Event controller migration (following auth controller patterns)
+4. Route migration (following established route patterns)
+5. Main application integration
+6. Docker and production setup
+
+### Event Service Specific Considerations
+
+**1. Business Logic Differences:**
+- Events have relationships to Users (creator, attendees)
+- Event status management (draft, published, cancelled)
+- Date/time handling for event scheduling
+- Location and venue management
+
+**2. New TypeScript Patterns Needed:**
+```typescript
+// Event-specific interfaces
+interface IEvent extends Document {
+  title: string;
+  description: string;
+  startDate: Date;
+  endDate: Date;
+  location: string;
+  creator: mongoose.Types.ObjectId;
+  attendees: mongoose.Types.ObjectId[];
+  status: 'draft' | 'published' | 'cancelled';
+}
+
+// Event creation request body
+interface CreateEventBody {
+  title: string;
+  description: string;
+  startDate: string; // ISO string from client
+  endDate: string;
+  location: string;
+}
+```
+
+**3. Cross-Service Communication:**
+```typescript
+// Event service will need to validate users exist
+// Consider shared validation utilities
+const validateUserExists = async (userId: string): Promise<boolean> => {
+  // Implementation for cross-service user validation
+};
+```
+
+## 10.4 Cross-Service Integration Patterns
+
+### Shared Type Library Strategy
+
+As you migrate more services, consider creating a shared types package:
+
+```
+packages/
+├── shared-types/
+│   ├── src/
+│   │   ├── auth.ts           # Authentication interfaces
+│   │   ├── users.ts          # User-related types
+│   │   ├── events.ts         # Event-related types
+│   │   ├── responses.ts      # Common response formats
+│   │   └── index.ts          # Exports all types
+│   ├── package.json
+│   └── tsconfig.json
+├── identity-service/
+├── event-service/
+└── invitation-service/
+```
+
+### API Integration Patterns
+
+**1. Type-Safe Inter-Service Communication:**
+```typescript
+// shared-types/src/users.ts
+export interface UserProfile {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+}
+
+// event-service usage
+import { UserProfile } from '@shared/types';
+
+const validateEventCreator = async (userId: string): Promise<UserProfile | null> => {
+  // Type-safe API call to identity service
+};
+```
+
+**2. Consistent Error Response Format:**
+```typescript
+// shared-types/src/responses.ts
+export interface ApiErrorResponse {
+  message: string;
+  code?: string;
+  details?: any;
+  timestamp: string;
+}
+
+export interface ApiSuccessResponse<T> {
+  data: T;
+  message?: string;
+  timestamp: string;
+}
+```
+
+### Final Migration Timeline
+
+With the Identity Service complete, your migration timeline becomes:
+
+```
+✅ Identity Service (Complete)
+├── TypeScript configuration established
+├── Security patterns implemented
+├── Testing framework configured
+└── Docker production setup working
+
+⏳ Event Service (Next - 1-2 weeks)
+├── Apply established patterns
+├── Implement event-specific business logic
+├── Add cross-service user validation
+└── Test event creation and management
+
+⏳ Invitation Service (Following - 1 week)
+├── Leverage existing patterns
+├── Implement invitation workflow
+├── Add event-user relationship handling
+└── Test invitation acceptance/decline
+
+⏳ API Gateway (Final - 1 week)
+├── Simple routing and middleware
+├── Request forwarding to services
+├── Centralized authentication
+└── Final integration testing
+
+🎯 Complete Migration (Target: v2.0.0-typescript-complete)
+```
+
+### Success Metrics
+
+Your TypeScript migration has been successful when:
+
+1. **Development Velocity**: Developers report faster development with better IDE support
+2. **Bug Reduction**: Fewer production bugs related to type errors and undefined properties
+3. **Code Quality**: Improved code maintainability and documentation through types
+4. **Team Confidence**: Developers feel more confident making changes and refactoring
+5. **Production Stability**: Reduced runtime errors and improved application reliability
+
+**Congratulations!** You've successfully migrated your Identity Service from JavaScript to TypeScript. The patterns and practices established here will make migrating the remaining services significantly faster and more straightforward. Your application now benefits from compile-time type safety, better developer experience, and improved production reliability.
