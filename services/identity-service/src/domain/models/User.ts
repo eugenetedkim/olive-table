@@ -38,49 +38,62 @@ export interface IUser extends Document {                                       
  *     - Creates a contract for what fields and methods a User must have
  */
 
-const UserSchema = new Schema<IUser>({                                                          // [3] Schema definition with type
-  email: {                                                                                      // [4] Email friend
-    type: String,
-    required: true,
-    unique: true,
-    trim: true,
-    lowercase: true
-  },
-  password: {                                                                                   // [5] Password field
-    type: String,
-    required: true,
-  },
-  firstName: {                                                                                  // [6] First name field
-    type: String,
-    required: true,
-    trim: true,
-  },
-  lastName: {                                                                                   // [7] Last name field
-    type: String,
-    required: true,
-    trim: true,
-  },
-  profilePicture: {                                                                             // [8] Profile picture field
-    type: String,
+const removePassword = (_: any, ret: any) => {
+  delete ret.password;  // Remove password from the plain object
+  return ret;
+};
 
-
+const UserSchema = new Schema<IUser>(
+  {                                                          // [3] Schema definition with type
+    email: {                                                                                      // [4] Email friend
+      type: String,
+      required: true,
+      unique: true,
+      trim: true,
+      lowercase: true
+    },
+    password: {                                                                                   // [5] Password field
+      type: String,
+      required: true,
+    },
+    firstName: {                                                                                  // [6] First name field
+      type: String,
+      required: true,
+      trim: true,
+    },
+    lastName: {                                                                                   // [7] Last name field
+      type: String,
+      required: true,
+      trim: true,
+    },
+    profilePicture: {                                                                             // [8] Profile picture field
+      type: String,
+    },
+    dietaryPreferences: {                                                                         // [9] Dietary preferences field
+      type: [String],
+    },
+    friends: [{                                                                                   // [10] Friends field
+      type: Schema.Types.ObjectId,
+      ref: 'User'
+    }],
+    createdAt: {                                                                                  // [11] Created data field
+      type: Date,
+      default: Date.now,
+    },
+    updatedAt: {                                                                                  // [12] Updated date field
+      type: Date,
+      default: Date.now,
+    },
   },
-  dietaryPreferences: {                                                                         // [9] Dietary preferences field
-    type: [String],
-  },
-  friends: [{                                                                                   // [10] Friends field
-    type: Schema.Types.ObjectId,
-    ref: 'User'
-  }],
-  createdAt: {                                                                                  // [11] Created data field
-    type: Date,
-    default: Date.now,
-  },
-  updatedAt: {                                                                                  // [12] Updated date field
-    type: Date,
-    default: Date.now,
-  },
-});                                                                                             // [13] End schema definition
+  { // Schema options with transform functions
+    toObject: {
+      transform: removePassword // Remove password when converting to object
+    },
+    toJSON: {
+      transform: removePassword // Remove password when converting to JSON
+    }
+  }
+);                                                                                             // [13] End schema definition
 
 UserSchema.pre<IUser>('save', async function(next) {                                            // [14] Pre-save hook
   this.updatedAt = new Date();
