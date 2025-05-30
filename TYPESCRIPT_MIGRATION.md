@@ -2855,171 +2855,228 @@ The main application file brings together all components, middleware, and routes
 ### JavaScript Version (Original - Keep During Migration)
 
 ```javascript
-// 📄 src/index.js
+// 📄 services/identity-service/src/index.js
 const express = require('express');
 const cors = require('cors');
-const helmet = require('helmet');
 const morgan = require('morgan');
-const connectDB = require('./infrastructure/db/mongoose');
+const { connectDB } = require('./infrastructure/db/mongoose');
 const authRoutes = require('./api/routes/auth');
 const userRoutes = require('./api/routes/users');
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+
+// Database Connection (immediate, not waiting)
+connectDB();
 
 // Middleware
 app.use(cors());
-app.use(helmet());
 app.use(morgan('dev'));
 app.use(express.json());
 
 // Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/users', userRoutes);
+app.use('/auth', authRoutes);
+app.use('/users', userRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'healthy' });
+  res.status(200).json({ status: 'ok' });
 });
 
 // Error handling
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(500).json({ message: 'Something went wrong!' });
-});
-
-// Start server
-connectDB().then(() => {
-  app.listen(PORT, () => {
-    console.log(`Identity service running on port ${PORT}`);
-  });
-}).catch(err => {
-  console.error('Database connection failed:', err);
-  process.exit(1);
-});
-```
-
-### TypeScript Version (New Implementation)
-
-```typescript
-// 📄 src/index.ts
-import express, { Request, Response, NextFunction } from 'express';
-import cors from 'cors';
-import helmet from 'helmet';
-import morgan from 'morgan';
-import { config } from 'dotenv';
-import connectDB from './infrastructure/db/mongoose';
-import authRoutes from './api/routes/auth';
-import userRoutes from './api/routes/users';
-
-// Load environment variables
-config();
-
-const app = express();
-const PORT: number = parseInt(process.env.PORT || '3001', 10);
-
-// Middleware
-app.use(cors());
-app.use(helmet());
-app.use(morgan('dev'));
-app.use(express.json());
-
-// Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/users', userRoutes);
-
-// Health check
-app.get('/health', (_req: Request, res: Response): void => {
-  res.status(200).json({ status: 'healthy' });
-});
-
-// Error handling
-app.use((err: Error, _req: Request, res: Response, _next: NextFunction): void => {
-  console.error('Unhandled error:', err);
-  res.status(500).json({ 
+  res.status(500).json({
     message: 'Something went wrong!',
     error: process.env.NODE_ENV === 'development' ? err.message : undefined
   });
 });
 
-// Connect to database and start server
-connectDB()
-  .then(() => {
-    app.listen(PORT, (): void => {
-      console.log(`Identity service running on port ${PORT}`);
-    });
-  })
-  .catch((err: Error) => {
-    console.error('Failed to start server:', err.message);
-    process.exit(1);
+// Start server (immediate, not waiting for DB)
+const PORT = process.env.PORT || 3001;
+app.listen(PORT, () => {
+  console.log(`Identity Service running on port ${PORT}`);
+});
+```
+
+### TypeScript Version (Industry Best Practices)
+
+```typescript
+// 📄 src/index.ts
+import express, { Request, Response, NextFunction } from 'express';
+import cors from 'cors';
+import morgan from 'morgan';
+
+// Smart environment loading - only load dotenv if not in production/container
+if (process.env.NODE_ENV !== 'production') {
+  const { config } = require('dotenv');
+  config();
+  console.log('🔧 Development: Loaded .env file with dotenv');
+} else {
+  console.log('🐳 Production: Using container environment variables');
+}
+
+import { connectDB } from './infrastructure/db/mongoose';
+import authRoutes from './api/routes/auth';
+import userRoutes from './api/routes/users';
+
+const app = express();
+
+// Middleware
+app.use(cors());
+
+// Environment-aware logging
+const morganFormat = process.env.NODE_ENV === 'production' ? 'combined' : 'dev';
+app.use(morgan(morganFormat));
+
+app.use(express.json());
+
+// Routes
+app.use('/auth', authRoutes);
+app.use('/users', userRoutes);
+
+// Health check
+app.get('/health', (_req: Request, res: Response): void => {
+  res.status(200).json({ status: 'ok' });
+});
+
+// Error handling
+app.use((err: Error, _req: Request, res: Response, _next: NextFunction): void => {
+  console.error(err.stack);
+  res.status(500).json({
+    message: 'Something went wrong!',
+    error: process.env.NODE_ENV === 'development' ? err.message : undefined
   });
+});
+
+// Modern async/await server startup - Industry Best Practice
+const PORT: number = parseInt(process.env.PORT || '3001', 10);
+
+const startServer = async (): Promise<void> => {
+  try {
+    await connectDB();
+    app.listen(PORT, (): void => {
+      console.log(`Identity Service running on port ${PORT}`);
+    });
+  } catch (error) {
+    console.error('Failed to start server:', error instanceof Error ? error.message : 'Unknown error');
+    process.exit(1);
+  }
+};
+
+startServer();
 
 export default app;
 ```
 
 ### Key Improvements in Main Application
 
-#### 1. Enhanced Imports and Environment Setup
+#### 1. Smart Environment Loading Strategy
 
-**JavaScript:**
+**JavaScript (Docker Compose handles .env):**
 ```javascript
 const express = require('express');
-// No dotenv import - relies on external loading
+// No dotenv import - Docker Compose env_file loads variables
 ```
 
-**TypeScript:**
+**TypeScript (Smart Detection):**
 ```typescript
 import express, { Request, Response, NextFunction } from 'express';
-import { config } from 'dotenv';
+import cors from 'cors';
+import morgan from 'morgan';
 
-// Load environment variables early
-config();
+// Smart environment loading - adapts to development context
+if (process.env.NODE_ENV !== 'production') {
+  const { config } = require('dotenv');
+  config();
+  console.log('🔧 Development: Loaded .env file with dotenv');
+} else {
+  console.log('🐳 Production: Using container environment variables');
+}
+
+import { connectDB } from './infrastructure/db/mongoose';
 ```
 
-**Improvements:**
-- **Explicit Environment Loading**: Ensures environment variables are available
-- **Type Imports**: Import Express types for middleware functions
-- **Consistent Module System**: All imports use ES6 syntax
+**Why This Approach:**
+- **Local Development** (`npm run dev`): Automatically loads `.env` file
+- **Docker Development** (`docker-compose up`): Uses `env_file` directive, skips dotenv
+- **Production**: Relies on container/deployment environment variables
+- **Placement**: Environment loading happens *before* application imports that might read env vars
 
-#### 2. Type-Safe Port Configuration
+#### 2. Modern Promise Handling with Async/Await
 
-**JavaScript:**
+**JavaScript (Old .then/.catch pattern):**
 ```javascript
+// Database Connection (immediate, no error handling)
+connectDB();
+
+// Start server (immediate, no dependency wait)
 const PORT = process.env.PORT || 3001;
+app.listen(PORT, () => {
+  console.log(`Identity Service running on port ${PORT}`);
+});
 ```
 
-**TypeScript:**
+**TypeScript (Modern async/await - Industry Standard):**
 ```typescript
-const PORT: number = parseInt(process.env.PORT || '3001', 10);
+const startServer = async (): Promise<void> => {
+  try {
+    await connectDB();                    // Wait for DB connection
+    app.listen(PORT, (): void => {
+      console.log(`Identity Service running on port ${PORT}`);
+    });
+  } catch (error) {
+    console.error('Failed to start server:', error instanceof Error ? error.message : 'Unknown error');
+    process.exit(1);                      // Fail fast on startup errors
+  }
+};
+
+startServer();
+```
+
+**Industry Best Practices Applied:**
+- ✅ **Wait for Database**: Server only starts if DB connects successfully
+- ✅ **Modern Async/Await**: Cleaner than `.then()/.catch()` chains
+- ✅ **Graceful Startup Failures**: Log error and exit cleanly if DB fails
+- ✅ **Fail Fast**: Prevents race conditions where requests hit server before DB is ready
+- ✅ **Production Ready**: Standard pattern for containerized deployments
+
+#### 3. Environment-Aware Application Configuration
+
+**JavaScript (Hardcoded):**
+```javascript
+app.use(morgan('dev')); // Always development format
+```
+
+**TypeScript (Environment-Aware):**
+```typescript
+// Environment-aware logging
+const morganFormat = process.env.NODE_ENV === 'production' ? 'combined' : 'dev';
+app.use(morgan(morganFormat));
 ```
 
 **Benefits:**
-- **Type Safety**: `PORT` is guaranteed to be a number
-- **Explicit Conversion**: `parseInt()` ensures proper type conversion
-- **Runtime Safety**: Prevents "port must be number" errors
+- **Development**: Colored, verbose logging for debugging
+- **Production**: Structured Apache-style logs for log aggregation
+- **Scalability**: Production logs work better with monitoring tools
 
-#### 3. Typed Route Handlers
+#### 4. Type-Safe Configuration
 
 **JavaScript:**
 ```javascript
-app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'healthy' });
-});
+const PORT = process.env.PORT || 3001; // Could be string or number
 ```
 
 **TypeScript:**
 ```typescript
-app.get('/health', (_req: Request, res: Response): void => {
-  res.status(200).json({ status: 'healthy' });
-});
+const PORT: number = parseInt(process.env.PORT || '3001', 10); // Guaranteed number
 ```
 
 **Improvements:**
-- **Explicit Types**: Parameters have defined types
-- **Return Type**: `: void` indicates no return value
-- **Unused Parameters**: Underscore prefix indicates intentionally unused parameters
+- **Type Safety**: Prevents runtime "port must be number" errors
+- **Explicit Conversion**: Clear intent with `parseInt()`
+- **Runtime Safety**: Handles edge cases in environment variable parsing
 
-#### 4. Enhanced Error Handler
+#### 5. Enhanced Error Handling
 
 **JavaScript:**
 ```javascript
@@ -3032,55 +3089,20 @@ app.use((err, req, res, next) => {
 **TypeScript:**
 ```typescript
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction): void => {
-  console.error('Unhandled error:', err);
-  res.status(500).json({ 
+  console.error(err.stack);
+  res.status(500).json({
     message: 'Something went wrong!',
     error: process.env.NODE_ENV === 'development' ? err.message : undefined
   });
 });
 ```
 
-**Improvements:**
-- **Full Type Annotations**: All parameters properly typed
-- **Environment-Aware Errors**: Show detailed errors only in development
-- **Better Logging**: More informative error messages
-- **Security**: Hide error details in production
+**Security Improvements:**
+- **Environment-Aware**: Hide error details in production
+- **Type Safety**: All parameters properly typed
+- **Unused Parameters**: Underscore prefix indicates intentionally unused
 
-#### 5. Improved Server Startup
-
-**JavaScript:**
-```javascript
-connectDB().then(() => {
-  app.listen(PORT, () => {
-    console.log(`Identity service running on port ${PORT}`);
-  });
-}).catch(err => {
-  console.error('Database connection failed:', err);
-  process.exit(1);
-});
-```
-
-**TypeScript:**
-```typescript
-connectDB()
-  .then(() => {
-    app.listen(PORT, (): void => {
-      console.log(`Identity service running on port ${PORT}`);
-    });
-  })
-  .catch((err: Error) => {
-    console.error('Failed to start server:', err.message);
-    process.exit(1);
-  });
-```
-
-**Improvements:**
-- **Explicit Promise Handling**: Clear error typing
-- **Better Error Messages**: More descriptive error context
-- **Type Safety**: Error parameter properly typed
-- **Return Type Annotations**: Callback functions have explicit void returns
-
-#### 6. Module Export for Testing
+#### 6. Testing and Modularity
 
 **New Addition:**
 ```typescript
@@ -3088,9 +3110,98 @@ export default app;
 ```
 
 **Benefits:**
-- **Testing Support**: Makes app available for unit/integration tests
-- **ES6 Module Pattern**: Consistent with TypeScript module system
-- **Reusability**: App can be imported in other contexts
+- **Unit Testing**: App can be imported for testing
+- **Integration Testing**: Enables request testing with supertest
+- **ES6 Modules**: Consistent with TypeScript ecosystem
+
+### Migration Decision Tree
+
+When migrating your application startup, choose based on your development workflow:
+
+#### Option 1: Mixed Development (Recommended)
+```typescript
+// Smart environment loading (supports both npm run dev AND docker-compose up)
+if (process.env.NODE_ENV !== 'production') {
+  const { config } = require('dotenv');
+  config();
+}
+```
+
+**Use this if you:**
+- Run `npm run dev` for local development
+- Use `docker-compose up` for integration testing
+- Want maximum flexibility
+
+#### Option 2: Docker-Only Development
+```typescript
+// No dotenv loading - rely entirely on Docker Compose env_file
+import { connectDB } from './infrastructure/db/mongoose';
+```
+
+**Use this if you:**
+- Always develop with `docker-compose up`
+- Never run `npm run dev` locally
+- Prefer simpler code
+
+#### Option 3: External Environment Loading
+```json
+// package.json
+{
+  "scripts": {
+    "dev": "node -r dotenv/config -r ts-node/register src/index.ts"
+  }
+}
+```
+
+**Use this if you:**
+- Want clean application code
+- Prefer external environment management
+- Don't mind updating package.json scripts
+
+### Docker Integration
+
+Your `docker-compose.yml` works perfectly with the smart loading approach:
+
+```yaml
+identity-service:
+  build: ./services/identity-service
+  env_file:                              # Loads .env automatically
+    - ./services/identity-service/.env
+  environment:
+    - NODE_ENV=production                # Smart loading detects this
+```
+
+**Why This Works:**
+- Docker sets `NODE_ENV=production` → Smart loader skips dotenv
+- `env_file` loads variables → App gets environment variables
+- No code changes needed between development and Docker
+
+### Testing the Migration
+
+```bash
+# Test local development
+npm run dev
+# Should see: "🔧 Development: Loaded .env file with dotenv"
+
+# Test Docker development  
+docker-compose up identity-service
+# Should see: "🐳 Production: Using container environment variables"
+
+# Test production build
+npm run build && npm start
+# Should work with either approach
+```
+
+### Migration Checklist
+
+- [ ] Replace `require()` with `import` statements
+- [ ] Add smart environment loading before application imports
+- [ ] Convert server startup to async/await pattern
+- [ ] Add proper TypeScript types to all handlers
+- [ ] Implement environment-aware logging
+- [ ] Add graceful error handling for startup
+- [ ] Export app for testing
+- [ ] Test both local and Docker development workflows
 
 ## 7.3 Middleware Integration
 
